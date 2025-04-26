@@ -48,7 +48,7 @@ const ProductSchema = new mongoose.Schema(
     categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
     description: { type: String },
     brand: { type: String },
-
+    isDeleted: { type: Boolean, default: false },
     colors: [
       {
         name: {
@@ -114,6 +114,7 @@ const ProductSchema = new mongoose.Schema(
         domesticWarranty: { type: String },
       },
     },
+    image: { type: String },
   },
   { timestamps: true }
 );

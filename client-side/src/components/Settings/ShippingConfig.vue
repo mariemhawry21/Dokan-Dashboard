@@ -11,6 +11,20 @@
         :items-per-page="10"
         class="elevation-1"
       >
+        <template v-slot:top>
+          <v-toolbar
+            flat
+            :color="$vuetify.theme.current.dark ? 'surface' : 'white'"
+          >
+            <v-btn
+              :color="$vuetify.theme.current.dark ? 'dark-primary' : 'primary'"
+              @click="openShippingDialog(null)"
+            >
+              <v-icon left>mdi-plus</v-icon>
+              Add Method
+            </v-btn>
+          </v-toolbar>
+        </template>
         <!-- Explicit header template -->
         <template v-slot:header="{ headers }">
           <thead>

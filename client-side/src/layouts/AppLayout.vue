@@ -72,6 +72,7 @@
     { title: 'Dashboard', to: '/dashboard' },
     { title: 'Products', to: '/products' },
     { title: 'Orders', to: '/orders' },
+  { title: "Customers", to: "/CustomerManagement" },
     { title: 'Requests', to: '/requests' },
     { title: 'Store Settings', to: '/config' }
   ]

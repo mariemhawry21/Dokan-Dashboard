@@ -5,9 +5,11 @@ import AuthLayout from '../layouts/AuthLayout.vue'
 import MainLayout from '../layouts/AppLayout.vue'
 
 // Views
-import Dashboard from '../views/Dashboard.vue'
-import Products from '../views/Products.vue'
-import Login from '../views/Login.vue'
+import Dashboard from "../views/Dashboard.vue";
+import Products from "../views/Products.vue";
+import Login from "../views/Login.vue";
+import CustomerManagement from "../views/CustomerManagement.vue"
+import CustomerDetails from "../views/CustomerDetails.vue"
 // import Register from "../views/Register.vue"; // Add this
 import Orders from '../views/Orders.vue'
 import NotFound from '../views/NotFound.vue'
@@ -43,7 +45,6 @@ const routes = [
         component: Dashboard
       },
       {
-        
         path: 'dashboard',
         redirect: { name: 'dashboard' }
       },
@@ -54,7 +55,7 @@ const routes = [
       },
       {
         path: 'orders',
-        name: 'Orders',
+        name: 'orders',
         component: Orders
       },
       {
@@ -66,6 +67,16 @@ const routes = [
         path: 'requests',
         name: 'Requests',
         component: Requests
+      },
+      {
+        path: 'CustomerManagement',
+        name: 'CustomerManagement',
+        component: CustomerManagement
+      },
+      {
+        path: 'CustomerDetails/:id',
+        name: 'CustomerDetails',
+        component: CustomerDetails
       }
     ]
   },

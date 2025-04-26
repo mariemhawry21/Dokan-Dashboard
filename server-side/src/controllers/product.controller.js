@@ -1,51 +1,49 @@
-const mongoose = require('mongoose');
-const httpStatusText = require('../utils/httpStatusText');
-const AppError = require('../utils/appError');
-const Product = require('../models/product.model');
-const asyncWrapper = require('../middlewares/asyncWrapper.middleware');
+const mongoose = require("mongoose");
+const httpStatusText = require("../utils/httpStatusText");
+const AppError = require("../utils/appError");
+const Product = require("../models/product.model");
+const asyncWrapper = require("../middlewares/asyncWrapper.middleware");
+const cloudinary = require('../config/cloudinary.config');
 
+//  Get all products
 const getAllProducts = asyncWrapper(async (req, res, next) => {
   let {
     limit = 16,
     page = 1,
-    categories = '',
-    order = 'desc',
-    sortBy = 'date',
+    categories = "",
+    order = "desc",
+    sortBy = "date",
     minPrice,
     maxPrice,
   } = req.query;
 
-  // Convert pagination values to numbers
   limit = Number(limit);
   page = Number(page);
 
   if (isNaN(limit) || isNaN(page) || limit < 1 || page < 1) {
     return next(
-      new AppError('Invalid pagination parameters.', 400, httpStatusText.FAIL)
+      new AppError("Invalid pagination parameters.", 400, httpStatusText.FAIL)
     );
   }
 
   const skip = (page - 1) * limit;
-  const sortOrder = order === 'asc' ? 1 : -1;
+  const sortOrder = order === "asc" ? 1 : -1;
 
-  // Define valid sort fields
   const sortFields = {
-    name: 'name',
-    date: 'date',
-    price: 'effectivePrice',
+    name: "name",
+    date: "date",
+    price: "effectivePrice",
   };
 
-  // Validate sortBy value
-  const sortField = sortFields[sortBy] || 'date';
+  const sortField = sortFields[sortBy] || "date";
 
-  // Category filter
   let categoryFilter = {};
   if (categories) {
-    const categoryIds = categories.split(',').map((id) => id.trim());
+    const categoryIds = categories.split(",").map((id) => id.trim());
 
     if (!categoryIds.every((id) => mongoose.isValidObjectId(id))) {
       return next(
-        new AppError('Invalid Category ID format.', 400, httpStatusText.FAIL)
+        new AppError("Invalid Category ID format.", 400, httpStatusText.FAIL)
       );
     }
 
@@ -56,7 +54,6 @@ const getAllProducts = asyncWrapper(async (req, res, next) => {
     };
   }
 
-  // Fetch min & max price dynamically if not provided
   if (!minPrice || !maxPrice) {
     const { minPrice: min, maxPrice: max } = await getPriceRange();
     minPrice = minPrice ?? min;
@@ -66,13 +63,11 @@ const getAllProducts = asyncWrapper(async (req, res, next) => {
   minPrice = Number(minPrice);
   maxPrice = Number(maxPrice);
 
-  // Price filter
   const priceFilter =
     !isNaN(minPrice) && !isNaN(maxPrice)
       ? { effectivePrice: { $gte: minPrice, $lte: maxPrice } }
       : {};
 
-  // Fetch total products count and products list concurrently
   const [totalProducts, products] = await Promise.all([
     getTotalProducts(categoryFilter, priceFilter),
     getFilteredProducts(
@@ -91,6 +86,178 @@ const getAllProducts = asyncWrapper(async (req, res, next) => {
   });
 });
 
+//  Create new product
+const createProduct = asyncWrapper(async (req, res, next) => {
+  console.log('Received data:', req.body);  
+
+  const {
+    name,
+    subtitle = '', 
+    price,
+    description = '', 
+    categories,
+    brand = '',
+    colors,
+    additionalInformation = {},
+  } = req.body;
+
+  let imageUrl = "";
+
+  if (!name && !price && !categories) {
+    return next(
+      new AppError(
+        "At least one of the fields: name, price, or categories must be provided.",
+        400,
+        httpStatusText.FAIL
+      )
+    );
+  }
+
+  if (req.file) {
+    try {
+      const result = await cloudinary.uploader.upload(req.file.path);
+      imageUrl = result.secure_url;
+    } catch (error) {
+      console.error("Error uploading image to Cloudinary:", error);
+      return next(
+        new AppError(
+          "Error uploading image to Cloudinary",
+          500,
+          httpStatusText.FAIL
+        )
+      );
+    }
+  }
+
+  const product = await Product.create({
+    name,
+    subtitle,
+    price,
+    description,
+    categories,
+    brand,
+    colors,
+    additionalInformation,
+    image: imageUrl,
+  });
+
+  res.status(201).json({
+    status: httpStatusText.SUCCESS,
+    data: { product },
+  });
+});
+
+
+//  Get product by ID
+const getProductById = asyncWrapper(async (req, res, next) => {
+  const { product_id } = req.params;
+  if (!product_id) {
+    return next(
+      new AppError("Product ID is required", 400, httpStatusText.FAIL)
+    );
+  }
+  if (!mongoose.isValidObjectId(product_id)) {
+    return next(
+      new AppError("Invalid Product ID format", 400, httpStatusText.FAIL)
+    );
+  }
+
+  const product = await Product.findById(product_id)
+    .select(
+      "_id name subtitle price date sale categories description brand colors additionalInformation"
+    )
+    .populate("categories", "name")
+    .lean();
+
+  if (!product) {
+    return next(new AppError("Product not found", 404, httpStatusText.FAIL));
+  }
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { product },
+  });
+});
+
+// Update product
+const updateProduct = asyncWrapper(async (req, res, next) => {
+  const {
+    name,
+    subtitle,
+    price,
+    description,
+    categories,
+    brand,
+    colors,
+    additionalInformation,
+  } = req.body;
+  let imageUrl = "";
+
+  if (!name && !price && !categories && !req.file) {
+    return next(
+      new AppError(
+        "At least one field (name, price, or categories) is required to update.",
+        400,
+        httpStatusText.FAIL
+      )
+    );
+  }
+
+  if (req.file) {
+    try {
+      const result = await cloudinary.uploader.upload(req.file.path);
+      imageUrl = result.secure_url;
+    } catch (error) {
+      console.error("Error uploading image to Cloudinary:", error);
+      return next(
+        new AppError(
+          "Error uploading image to Cloudinary",
+          500,
+          httpStatusText.FAIL
+        )
+      );
+    }
+  }
+
+  const product = await Product.findById(req.params.product_id);
+  if (!product) {
+    return next(new AppError("Product not found.", 404, httpStatusText.FAIL));
+  }
+
+  if (name) product.name = name;
+  if (subtitle) product.subtitle = subtitle;
+  if (price) product.price = price;
+  if (description) product.description = description;
+  if (categories) product.categories = categories;
+  if (brand) product.brand = brand;
+  if (colors) product.colors = colors;
+  if (additionalInformation)
+    product.additionalInformation = additionalInformation;
+  if (imageUrl) product.image = imageUrl;
+
+  await product.save();
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { product },
+  });
+});
+
+// Soft delete product
+const softDeleteProduct = asyncWrapper(async (req, res, next) => {
+  const product = await Product.findById(req.params.product_id);
+  if (!product) {
+    return next(new AppError("Product not found.", 404, httpStatusText.FAIL));
+  }
+
+  product.isDeleted = true;
+  await product.save();
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    message: "Product soft deleted successfully.",
+  });
+});
+
 // Function to get price range
 const getPriceRange = async () => {
   const result = await Product.aggregate([
@@ -98,8 +265,8 @@ const getPriceRange = async () => {
     {
       $group: {
         _id: null,
-        minPrice: { $min: '$effectivePrice' },
-        maxPrice: { $max: '$effectivePrice' },
+        minPrice: { $min: "$effectivePrice" },
+        maxPrice: { $max: "$effectivePrice" },
       },
     },
   ]);
@@ -113,7 +280,7 @@ const getTotalProducts = async (categoryFilter, priceFilter) => {
     { $match: categoryFilter },
     { $addFields: { effectivePrice: calculateEffectivePrice() } },
     { $match: priceFilter },
-    { $count: 'total' },
+    { $count: "total" },
   ]);
 
   return result.length > 0 ? result[0].total : 0;
@@ -137,15 +304,15 @@ const getFilteredProducts = async (
     { $limit: limit },
     {
       $lookup: {
-        from: 'categories',
-        localField: 'categories',
-        foreignField: '_id',
-        as: 'categories',
+        from: "categories",
+        localField: "categories",
+        foreignField: "_id",
+        as: "categories",
       },
     },
     {
       $addFields: {
-        firstColor: { $arrayElemAt: ['$colors', 0] },
+        firstColor: { $arrayElemAt: ["$colors", 0] },
       },
     },
     {
@@ -154,19 +321,19 @@ const getFilteredProducts = async (
         name: 1,
         subtitle: 1,
         image: {
-          $arrayElemAt: ['$firstColor.images.url', 0],
+          $arrayElemAt: ["$firstColor.images.url", 0],
         },
         price: 1,
         date: 1,
         sale: 1,
-        quantity: '$firstColor.quantity',
+        quantity: "$firstColor.quantity",
         effectivePrice: 1,
-        mainColor: '$firstColor.name',
+        mainColor: "$firstColor.name",
         categories: {
           $map: {
-            input: '$categories',
-            as: 'category',
-            in: { _id: '$$category._id', name: '$$category.name' },
+            input: "$categories",
+            as: "category",
+            in: { _id: "$$category._id", name: "$$category.name" },
           },
         },
       },
@@ -177,11 +344,11 @@ const getFilteredProducts = async (
 // Function to calculate effective price
 const calculateEffectivePrice = () => ({
   $cond: {
-    if: { $gt: ['$sale', 0] },
+    if: { $gt: ["$sale", 0] },
     then: {
-      $multiply: ['$price', { $subtract: [1, { $divide: ['$sale', 100] }] }],
+      $multiply: ["$price", { $subtract: [1, { $divide: ["$sale", 100] }] }],
     },
-    else: '$price',
+    else: "$price",
   },
 });
 
@@ -200,10 +367,10 @@ const projectFields = () => ({
 
 // Function to lookup categories
 const lookupCategories = () => ({
-  from: 'categories',
-  localField: 'categories',
-  foreignField: '_id',
-  as: 'categories',
+  from: "categories",
+  localField: "categories",
+  foreignField: "_id",
+  as: "categories",
 });
 
 // Function to project category names
@@ -219,40 +386,11 @@ const projectCategoryNames = () => ({
   effectivePrice: 1,
   categories: {
     $map: {
-      input: '$categories',
-      as: 'category',
-      in: { _id: '$$category._id', name: '$$category.name' },
+      input: "$categories",
+      as: "category",
+      in: { _id: "$$category._id", name: "$$category.name" },
     },
   },
-});
-
-const getProductById = asyncWrapper(async (req, res, next) => {
-  const { product_id } = req.params;
-  if (!product_id) {
-    return next(
-      new AppError('Product ID is required', 400, httpStatusText.FAIL)
-    );
-  }
-  if (!mongoose.isValidObjectId(product_id)) {
-    return next(
-      new AppError('Invalid Product ID format', 400, httpStatusText.FAIL)
-    );
-  }
-
-  const product = await Product.findById(product_id)
-    .select(
-      '_id name subtitle price date sale categories description brand colors additionalInformation'
-    )
-    .populate('categories', 'name')
-    .lean();
-
-  if (!product) {
-    return next(new AppError('Product not found', 404, httpStatusText.FAIL));
-  }
-  res.status(200).json({
-    status: httpStatusText.SUCCESS,
-    data: { product },
-  });
 });
 
 const getMinEffectivePrice = asyncWrapper(async (req, res, next) => {
@@ -261,14 +399,14 @@ const getMinEffectivePrice = asyncWrapper(async (req, res, next) => {
       $addFields: {
         effectivePrice: {
           $cond: {
-            if: { $gt: ['$sale', 0] }, // If there's a discount
+            if: { $gt: ["$sale", 0] }, // If there's a discount
             then: {
               $multiply: [
-                '$price',
-                { $subtract: [1, { $divide: ['$sale', 100] }] },
+                "$price",
+                { $subtract: [1, { $divide: ["$sale", 100] }] },
               ],
             },
-            else: '$price', // Otherwise, use original price
+            else: "$price", // Otherwise, use original price
           },
         },
       },
@@ -276,7 +414,7 @@ const getMinEffectivePrice = asyncWrapper(async (req, res, next) => {
     {
       $group: {
         _id: null,
-        minEffectivePrice: { $min: '$effectivePrice' },
+        minEffectivePrice: { $min: "$effectivePrice" },
       },
     },
   ]);
@@ -295,14 +433,14 @@ const getMaxEffectivePrice = asyncWrapper(async (req, res, next) => {
       $addFields: {
         effectivePrice: {
           $cond: {
-            if: { $gt: ['$sale', 0] },
+            if: { $gt: ["$sale", 0] },
             then: {
               $multiply: [
-                '$price',
-                { $subtract: [1, { $divide: ['$sale', 100] }] },
+                "$price",
+                { $subtract: [1, { $divide: ["$sale", 100] }] },
               ],
             },
-            else: '$price',
+            else: "$price",
           },
         },
       },
@@ -310,7 +448,7 @@ const getMaxEffectivePrice = asyncWrapper(async (req, res, next) => {
     {
       $group: {
         _id: null,
-        maxEffectivePrice: { $max: '$effectivePrice' },
+        maxEffectivePrice: { $max: "$effectivePrice" },
       },
     },
   ]);
@@ -327,25 +465,25 @@ const getProductForComparison = asyncWrapper(async (req, res, next) => {
   const { product_id } = req.params;
   if (!product_id) {
     return next(
-      new AppError('Product ID is required', 400, httpStatusText.FAIL)
+      new AppError("Product ID is required", 400, httpStatusText.FAIL)
     );
   }
 
   if (!mongoose.isValidObjectId(product_id)) {
     return next(
-      new AppError('Invalid Product ID format', 400, httpStatusText.FAIL)
+      new AppError("Invalid Product ID format", 400, httpStatusText.FAIL)
     );
   }
 
   const product = await Product.findById(product_id)
     .select(
-      '_id name subtitle productImages price quantity date sale categories description colors sizes brand additionalInformation'
+      "_id name subtitle productImages price quantity date sale categories description colors sizes brand additionalInformation"
     )
-    .populate('categories', 'name')
+    .populate("categories", "name")
     .lean();
 
   if (!product) {
-    return next(new AppError('Product not found', 404, httpStatusText.FAIL));
+    return next(new AppError("Product not found", 404, httpStatusText.FAIL));
   }
 
   res.status(200).json({
@@ -360,7 +498,7 @@ const getSearchProducts = asyncWrapper(async (req, res, next) => {
   const { query } = req.query;
   if (!query) {
     return next(
-      new AppError('Please enter a search keyword!', 400, httpStatusText.FAIL)
+      new AppError("Please enter a search keyword!", 400, httpStatusText.FAIL)
     );
   }
 
@@ -368,15 +506,15 @@ const getSearchProducts = asyncWrapper(async (req, res, next) => {
 
   const products = await Product.find({
     $or: [
-      { name: { $regex: query, $options: 'i' } },
+      { name: { $regex: query, $options: "i" } },
       { categories: { $in: categoryIds } },
     ],
   })
-    .populate('categories', 'name')
+    .populate("categories", "name")
     .lean();
 
   if (!products.length) {
-    return next(new AppError('No products found.', 404, httpStatusText.FAIL));
+    return next(new AppError("No products found.", 404, httpStatusText.FAIL));
   }
 
   res.status(200).json({
@@ -385,19 +523,95 @@ const getSearchProducts = asyncWrapper(async (req, res, next) => {
   });
 });
 
+
+const updateProductColors = asyncWrapper(async (req, res, next) => {
+  const { product_id } = req.params;
+  const { colors } = req.body;
+
+  if (!product_id || !mongoose.isValidObjectId(product_id)) {
+    return next(new AppError("Invalid Product ID format", 400, httpStatusText.FAIL));
+  }
+
+  if (!Array.isArray(colors) || colors.length === 0) {
+    return next(new AppError("Colors must be a non-empty array", 400, httpStatusText.FAIL));
+  }
+
+  const product = await Product.findById(product_id);
+  if (!product) {
+    return next(new AppError("Product not found", 404, httpStatusText.FAIL));
+  }
+
+  product.colors = colors;
+  await product.save();
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    message: "Product colors updated successfully",
+    data: { product },
+  });
+});
+
+//  Get product stock quantity
+const getProductStock = asyncWrapper(async (req, res, next) => {
+  const { product_id } = req.params;
+
+  if (!product_id) {
+    return next(
+      new AppError("Product ID is required", 400, httpStatusText.FAIL)
+    );
+  }
+
+  if (!mongoose.isValidObjectId(product_id)) {
+    return next(
+      new AppError("Invalid Product ID format", 400, httpStatusText.FAIL)
+    );
+  }
+
+  const product = await Product.findById(product_id)
+    .select("name colors")
+    .lean();
+
+  if (!product) {
+    return next(new AppError("Product not found", 404, httpStatusText.FAIL));
+  }
+
+  const stockData = product.colors.map((color) => ({
+    color: color.name,
+    quantity: color.quantity,
+  }));
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { productName: product.name, stock: stockData },
+  });
+});
+
 async function getCategoryIds(query) {
-  const categories = await require('../models/category.model')
-    .find({ name: { $regex: query, $options: 'i' } })
-    .select('_id')
+  const categories = await require("../models/category.model")
+    .find({ name: { $regex: query, $options: "i" } })
+    .select("_id")
     .lean();
   return categories.map((cat) => cat._id);
 }
 
 module.exports = {
   getAllProducts,
+  createProduct,
   getProductById,
+  updateProduct,
+  softDeleteProduct,
+  getPriceRange,
+  getTotalProducts,
+  getFilteredProducts,
+  calculateEffectivePrice,
+  projectFields,
+  lookupCategories,
+  projectCategoryNames,
   getMinEffectivePrice,
   getMaxEffectivePrice,
   getProductForComparison,
   getSearchProducts,
+  updateProductColors,
+  getProductStock,
+
 };

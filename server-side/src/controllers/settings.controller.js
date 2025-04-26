@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const httpStatusText = require("../utils/httpStatusText");
 const AppError = require("../utils/appError");
-const StoreSettings = require("../models/settings.model");
+const StoreSettings = require("../models/setting.model");
 
 const getStoreSettings = async (req, res, next) => {
   try {

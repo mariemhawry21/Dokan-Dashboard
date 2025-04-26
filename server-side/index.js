@@ -2,11 +2,13 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 require('dotenv').config();
+const cloudinary = require('./src/config/cloudinary.config');
 
 // Scripts to run
 require('./src/middlewares/passport.middleware');
 require('./src/services/orderStatus.service');
 
+require('./seed');
 const passport = require('passport');
 
 / * * * * Utils * * * * /;
@@ -32,7 +34,7 @@ const contactRouter = require('./src/routes/contact.routes');
 const orderRouter = require('./src/routes/order.routes');
 const paymentRouter = require('./src/routes/payment.routes');
 const settingsRouter= require("./src/routes/settings.routes")
-/ * * * * End Router imports * * * * /;
+// / * * * * End Router imports * * * * /;
 
 // Connect to MongoDB
 connectDB();
@@ -80,4 +82,5 @@ app.use((error, req, res, next) => {
 app.listen(PORT, () =>
   console.log(`I am running on: http://localhost:${PORT}`)
 );
+app.use(express.urlencoded({ extended: true }));
 module.exports = app;
