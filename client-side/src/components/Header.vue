@@ -1,7 +1,7 @@
 <template>
-  <v-app-bar color="background" style="box-shadow: none;">
+  <v-app-bar color="background" style="box-shadow: none;position: fixed;">
     <v-app-bar-nav-icon v-if="isMobile" @click="$emit('toggle-drawer')" />
-    <v-toolbar-title>{{ pageTitle }}</v-toolbar-title>
+    <v-toolbar-title>{{ pageTitle.toUpperCase() }}</v-toolbar-title>
     <v-btn
       icon
       @click="toggleTheme"

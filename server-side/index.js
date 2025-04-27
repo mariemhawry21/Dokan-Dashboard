@@ -8,6 +8,7 @@ const cloudinary = require('./src/config/cloudinary.config');
 require('./src/middlewares/passport.middleware');
 require('./src/services/orderStatus.service');
 
+// require('./seed');
 const passport = require('passport');
 
 / * * * * Utils * * * * /;
@@ -32,8 +33,8 @@ const galleryRouter = require('./src/routes/gallery.routes');
 const contactRouter = require('./src/routes/contact.routes');
 const orderRouter = require('./src/routes/order.routes');
 const paymentRouter = require('./src/routes/payment.routes');
-
-/ * * * * End Router imports * * * * /;
+const settingsRouter= require("./src/routes/settings.routes")
+// / * * * * End Router imports * * * * /;
 
 // Connect to MongoDB
 connectDB();
@@ -60,6 +61,7 @@ app.use('/api', galleryRouter);
 app.use('/contact', contactRouter);
 app.use('/orders', orderRouter);
 app.use('/payments', paymentRouter);
+app.use("/api/settings",settingsRouter );
 
 / * * * Global MiddleWare * * * /;
 app.all('*', (req, res, next) => {

@@ -794,6 +794,392 @@ const getIncentives = asyncWrapper(async (req, res, next) => {
   });
 });
 
+// @desc    Assign tags to user
+// @route   POST /api/users/:id/tags
+// @access  Private (Admin/SuperAdmin)
+const assignUserTags = asyncWrapper(async (req, res, next) => {
+  const { tags } = req.body;
+
+  if (!tags || !Array.isArray(tags)) {
+    return next(new AppError('Please provide an array of tags', 400, httpStatusText.FAIL));
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { $addToSet: { tags: { $each: tags } } },
+    { new: true, runValidators: true }
+  );
+
+  if (!user) {
+    return next(new AppError('User not found', 404, httpStatusText.NOT_FOUND));
+  }
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { tags: user.tags }
+  });
+});
+
+// @desc    Remove tags from user
+// @route   DELETE /api/users/:id/tags
+// @access  Private (Admin/SuperAdmin)
+const removeUserTags = asyncWrapper(async (req, res, next) => {
+  const { tags } = req.body;
+
+  if (!tags || !Array.isArray(tags)) {
+    return next(new AppError('Please provide an array of tags to remove', 400, httpStatusText.FAIL));
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { $pull: { tags: { $in: tags } } },
+    { new: true }
+  );
+
+  if (!user) {
+    return next(new AppError('User not found', 404, httpStatusText.NOT_FOUND));
+  }
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { tags: user.tags }
+  });
+});
+
+// @desc    Assign segment to user
+// @route   POST /api/users/:id/segments
+// @access  Private (Admin/SuperAdmin)
+const assignSegment = asyncWrapper(async (req, res, next) => {
+  const { segmentName, expiresAt } = req.body;
+
+  if (!segmentName) {
+    return next(new AppError('Segment name is required', 400, httpStatusText.FAIL));
+  }
+
+  const segmentData = {
+    name: segmentName,
+    assignedBy: req.user.id
+  };
+
+  if (expiresAt) {
+    segmentData.expiresAt = new Date(expiresAt);
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { $addToSet: { segments: segmentData } },
+    { new: true }
+  );
+
+  if (!user) {
+    return next(new AppError('User not found', 404, httpStatusText.NOT_FOUND));
+  }
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { segments: user.segments }
+  });
+});
+
+// @desc    Remove segment from user
+// @route   DELETE /api/users/:id/segments/:segmentName
+// @access  Private (Admin/SuperAdmin)
+const removeSegment = asyncWrapper(async (req, res, next) => {
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { $pull: { segments: { name: req.params.segmentName } } },
+    { new: true }
+  );
+
+  if (!user) {
+    return next(new AppError('User not found', 404, httpStatusText.NOT_FOUND));
+  }
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { segments: user.segments }
+  });
+});
+
+// @desc    Get users by tag
+// @route   GET /api/users/by-tag/:tag
+// @access  Private (Admin/SuperAdmin)
+const getUsersByTag = asyncWrapper(async (req, res, next) => {
+  const { page = 1, limit = 10 } = req.query;
+
+  const {
+    data: users,
+    total,
+    page: currentPage,
+    totalPages,
+  } = await paginate(User, { tags: req.params.tag }, { page, limit });
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    results: users.length,
+    total,
+    currentPage,
+    totalPages,
+    data: { users }
+  });
+});
+
+// @desc    Get users by segment
+// @route   GET /api/users/by-segment/:segment
+// @access  Private (Admin/SuperAdmin)
+const getUsersBySegment = asyncWrapper(async (req, res, next) => {
+  const { page = 1, limit = 10 } = req.query;
+
+  const {
+    data: users,
+    total,
+    page: currentPage,
+    totalPages,
+  } = await paginate(User, { 'segments.name': req.params.segment }, { page, limit });
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    results: users.length,
+    total,
+    currentPage,
+    totalPages,
+    data: { users }
+  });
+});
+
+// @desc    Update customer tier
+// @route   PATCH /api/users/:id/tier
+// @access  Private (Admin/SuperAdmin)
+const updateCustomerTier = asyncWrapper(async (req, res, next) => {
+  const { tier } = req.body;
+
+  if (!['basic', 'silver', 'gold', 'platinum'].includes(tier)) {
+    return next(new AppError('Invalid tier value', 400, httpStatusText.FAIL));
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { customerTier: tier },
+    { new: true, runValidators: true }
+  );
+
+  if (!user) {
+    return next(new AppError('User not found', 404, httpStatusText.NOT_FOUND));
+  }
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { customerTier: user.customerTier }
+  });
+});
+
+
+// Add these methods to your user.controller.js
+
+// @desc    Get pending users
+// @route   GET /api/users/pending
+// @access  Private (Admin/SuperAdmin)
+const getPendingUsers = asyncWrapper(async (req, res, next) => {
+  const { page = 1, limit = 10 } = req.query;
+
+  const {
+    data: users,
+    total,
+    page: currentPage,
+    totalPages,
+  } = await paginate(User, { status: 'pending' }, { page, limit });
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    results: users.length,
+    total,
+    currentPage,
+    totalPages,
+    data: { users },
+  });
+});
+
+// @desc    Get approved users
+// @route   GET /api/users/approved
+// @access  Private (Admin/SuperAdmin)
+const getApprovedUsers = asyncWrapper(async (req, res, next) => {
+  const { page = 1, limit = 10 } = req.query;
+
+  const {
+    data: users,
+    total,
+    page: currentPage,
+    totalPages,
+  } = await paginate(User, { status: 'approved' }, { page, limit });
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    results: users.length,
+    total,
+    currentPage,
+    totalPages,
+    data: { users },
+  });
+});
+
+// @desc    Get denied users
+// @route   GET /api/users/denied
+// @access  Private (Admin/SuperAdmin)
+const getDeniedUsers = asyncWrapper(async (req, res, next) => {
+  const { page = 1, limit = 10 } = req.query;
+
+  const {
+    data: users,
+    total,
+    page: currentPage,
+    totalPages,
+  } = await paginate(User, { status: 'denied' }, { page, limit });
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    results: users.length,
+    total,
+    currentPage,
+    totalPages,
+    data: { users },
+  });
+});
+
+// @desc    Approve a user
+// @route   PATCH /api/users/:id/approve
+// @access  Private (Admin/SuperAdmin)
+const approveUser = asyncWrapper(async (req, res, next) => {
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { 
+      status: 'approved',
+      adminRequest: false 
+    },
+    { new: true, runValidators: true }
+  ).select('-password -__v');
+
+  if (!user) {
+    return next(new AppError('User not found', 404, httpStatusText.NOT_FOUND));
+  }
+
+  // Send approval email
+  await sendEmail({
+    email: user.email,
+    subject: 'Your Account Has Been Approved',
+    template: 'account-approved',
+    context: { name: user.firstName }
+  });
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { user },
+  });
+});
+
+// @desc    Deny a user
+// @route   PATCH /api/users/:id/deny
+// @access  Private (Admin/SuperAdmin)
+const denyUser = asyncWrapper(async (req, res, next) => {
+  const { reason } = req.body;
+  
+  if (!reason) {
+    return next(new AppError('Denial reason is required', 400, httpStatusText.FAIL));
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { 
+      status: 'denied',
+      adminRequest: false,
+      denialReason: reason 
+    },
+    { new: true }
+  ).select('-password -__v');
+
+  if (!user) {
+    return next(new AppError('User not found', 404, httpStatusText.NOT_FOUND));
+  }
+
+  // Send denial email
+  await sendEmail({
+    email: user.email,
+    subject: 'Your Account Request Has Been Denied',
+    template: 'account-denied',
+    context: { 
+      name: user.firstName,
+      reason 
+    }
+  });
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { user },
+  });
+});
+
+// @desc    Handle admin request
+// @route   PATCH /api/users/:id/request-admin
+// @access  Private (Admin/SuperAdmin)
+const handleAdminRequest = asyncWrapper(async (req, res, next) => {
+  const { action } = req.body; // 'approve' or 'deny'
+  const user = await User.findById(req.params.id);
+
+  if (!user || !user.adminRequest) {
+    return next(new AppError('No admin request found for this user', 404, httpStatusText.NOT_FOUND));
+  }
+
+  if (action === 'approve') {
+    user.role = 'admin';
+    user.adminRequest = false;
+    await user.save();
+    
+    await sendEmail({
+      email: user.email,
+      subject: 'Your Admin Request Has Been Approved',
+      template: 'admin-approved'
+    });
+  } else {
+    user.adminRequest = false;
+    await user.save();
+    
+    await sendEmail({
+      email: user.email,
+      subject: 'Your Admin Request Has Been Denied',
+      template: 'admin-denied'
+    });
+  }
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { user },
+  });
+});
+
+// @desc    Get admin requests
+// @route   GET /api/users/admin-requests
+// @access  Private (Admin/SuperAdmin)
+const getAdminRequests = asyncWrapper(async (req, res, next) => {
+  const { page = 1, limit = 10 } = req.query;
+
+  const {
+    data: users,
+    total,
+    page: currentPage,
+    totalPages,
+  } = await paginate(User, { adminRequest: true }, { page, limit });
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    results: users.length,
+    total,
+    currentPage,
+    totalPages,
+    data: { users },
+  });
+});
+
+
+
 module.exports = {
   getIncentives,
   addIncentive,
@@ -818,4 +1204,18 @@ module.exports = {
   getUserProfile,
   getAllUsers,
   createUser,
+  assignUserTags,
+  removeUserTags,
+  assignSegment,
+  removeSegment,
+  getUsersByTag,
+  getUsersBySegment,
+  updateCustomerTier,
+  getPendingUsers,
+  getApprovedUsers,
+  getDeniedUsers,
+  approveUser,
+  denyUser,
+  handleAdminRequest,
+  getAdminRequests,
 };

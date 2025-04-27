@@ -23,7 +23,9 @@ const getOrders = asyncWrapper(async (req, res, next) => {
   const skip = (page - 1) * limit;
 
   const orders = await Order.find({ userId })
-    .select("orderNumber status orderItems totalAmount createdAt")
+    .select(
+      "orderNumber status orderItems totalAmount shippingMethod  createdAt"
+    )
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -39,8 +41,11 @@ const getOrders = asyncWrapper(async (req, res, next) => {
   const formattedOrders = orders.map((order) => ({
     orderNumber: order.orderNumber,
     status: order.status,
-    orderNumber: order.orderNumber,
     total: `${order.totalAmount.toFixed(2)}`,
+    shippingMethod: {
+      name: order.shippingMethod?.name || "",
+      cost: order.shippingMethod?.cost?.toFixed(2) || "0.00",
+    },
     createdAt: order.createdAt.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",

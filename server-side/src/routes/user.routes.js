@@ -1,90 +1,86 @@
-const express = require('express');
+// routes/user.routes.js
+const express = require("express");
 const router = express.Router();
-const userController = require('../controllers/user.controller');
-const verifyToken = require('../middlewares/auth.middleware');
-const allowedTo = require('../middlewares/allowTo.middleware');
-const { upload } = require('../middlewares/upload.middleware');
+const userController = require("../controllers/user.controller");
+const {
+  avatarUpload,
+  authenticateUser,
+  adminAccess,
+  superAdminAccess,
+  supportAccess,
+  accountantAccess,
+  adminRole,
+  superAdminRole,
+} = require("../middlewares/user.middleware");
 
-// Public routes
-router.post('/', userController.createUser);
-router.get('/', userController.getAllUsers);
+// ===== Public Routes =====
+router.post("/", userController.createUser);
+router.get("/", userController.getAllUsers);
 
-// Protected routes
-router.use(verifyToken);
+// ===== Protected Routes (Require Authentication) =====
+router.use(authenticateUser);
 
-// User profile
-router.get('/profile', userController.getUserProfile);
-router.patch('/profile', userController.updateUserProfile);
-router.patch('/profile/avatar', upload.single('avatar'), userController.updateAvatar);
-router.patch('/profile/password', userController.changePassword);
+// ===== User Profile =====
+router.get("/profile", userController.getUserProfile);
+router.patch("/profile", userController.updateUserProfile);
+router.patch("/profile/avatar", avatarUpload, userController.updateAvatar);
+router.patch("/profile/password", userController.changePassword);
 
-// User management (Admin only)
-router.get('/:id', allowedTo('admin', 'super_admin'), userController.getUserById);
-router.patch('/:id', allowedTo('admin', 'super_admin'), userController.updateUser);
-router.delete('/:id', allowedTo('super_admin'), userController.deleteUser);
-router.post('/:id/restore', allowedTo('super_admin'), userController.restoreUser);
+// ===== User Management (Admin Access) =====
+router.get("/:id", adminAccess, userController.getUserById);
+router.patch("/:id", adminAccess, userController.updateUser);
+router.delete("/:id", superAdminAccess, userController.deleteUser);
+router.post("/:id/restore", superAdminAccess, userController.restoreUser);
 
-// Activities
-router.post('/:id/activities', allowedTo('admin', 'super_admin'), userController.addActivity);
-router.get('/:id/activities', allowedTo('admin', 'super_admin'), userController.getActivities);
+// ===== Activities =====
+router.post("/:id/activities", adminAccess, userController.addActivity);
+router.get("/:id/activities", adminAccess, userController.getActivities);
 
-// Support tickets
-router.post('/:id/tickets', allowedTo('admin', 'super_admin', 'support'), userController.createTicket);
-router.get('/:id/tickets', allowedTo('admin', 'super_admin', 'support'), userController.getTickets);
-router.patch('/:id/tickets/:ticketId', allowedTo('admin', 'super_admin', 'support'), userController.updateTicket);
+// ===== Support Tickets =====
+router.post("/:id/tickets", supportAccess, userController.createTicket);
+router.get("/:id/tickets", supportAccess, userController.getTickets);
+router.patch("/:id/tickets/:ticketId", supportAccess, userController.updateTicket);
 
-// Credit management
-router.post('/:id/credit', allowedTo('super_admin', 'accountant'), userController.addCredit);
-router.get('/:id/credit', allowedTo('admin', 'super_admin', 'accountant'), userController.getCreditHistory);
+// ===== Credit Management =====
+router.post("/:id/credit", accountantAccess, userController.addCredit);
+router.get("/:id/credit", adminAccess, userController.getCreditHistory);
 
-// Special cases
-router.post('/:id/special-cases', allowedTo('admin', 'super_admin'), userController.addSpecialCase);
-router.get('/:id/special-cases', allowedTo('admin', 'super_admin'), userController.getSpecialCases);
+// ===== Special Cases =====
+router.post("/:id/special-cases", adminAccess, userController.addSpecialCase);
+router.get("/:id/special-cases", adminAccess, userController.getSpecialCases);
 
-// Reviews
-router.post('/:id/reviews', userController.addReview);
-router.get('/:id/reviews', userController.getReviews);
+// ===== Reviews =====
+router.post("/:id/reviews", userController.addReview);
+router.get("/:id/reviews", userController.getReviews);
 
-// Incentives
-router.post('/:id/incentives', allowedTo('admin', 'super_admin'), userController.addIncentive);
-router.get('/:id/incentives', allowedTo('admin', 'super_admin'), userController.getIncentives);
+// ===== Incentives =====
+router.post("/:id/incentives", adminAccess, userController.addIncentive);
+router.get("/:id/incentives", adminAccess, userController.getIncentives);
+
+// ===== Tags Management =====
+router.post("/:id/tags", adminRole, userController.assignUserTags);
+router.delete("/:id/tags", adminRole, userController.removeUserTags);
+
+// ===== Segments Management =====
+router.post("/:id/segments", adminRole, userController.assignSegment);
+router.delete("/:id/segments/:segmentName", adminRole, userController.removeSegment);
+
+// ===== User Queries (Filter) =====
+router.get("/by-tag/:tag", adminRole, userController.getUsersByTag);
+router.get("/by-segment/:segment", adminRole, userController.getUsersBySegment);
+
+// ===== Tier Management =====
+router.patch("/:id/tier", adminRole, userController.updateCustomerTier);
+
+// ===== User Status Management =====
+router.get("/pending", adminRole, userController.getPendingUsers);
+router.get("/approved", adminRole, userController.getApprovedUsers);
+router.get("/denied", adminRole, userController.getDeniedUsers);
+router.patch("/:id/approve", adminRole, userController.approveUser);
+router.patch("/:id/deny", adminRole, userController.denyUser);
+
+// ===== Admin Request Management =====
+router.patch("/:id/request-admin", adminRole, userController.handleAdminRequest);
+router.get("/admin-requests", adminRole, userController.getAdminRequests);
 
 module.exports = router;
-
-
-// const express = require('express');
-// const router = express.Router();
-// const userController = require('../controllers/user.controller');
-// const verifyToken = require('../middlewares/auth.middleware');
-// const allowedTo = require('../middlewares/allowTo.middleware');
-// // const rateLimit = require('express-rate-limit');
-
-// // const limiter = rateLimit({
-// //   windowMs: 15 * 60 * 1000, // 15 minutes
-// //   max: 100, // max 100 requests per windowMs
-// // });
-
-// // router.use(limiter);
-
-// router.route('/favourites').get(verifyToken, userController.getFavourites);
-// router
-//   .route('/')
-//   .get(verifyToken, allowedTo('ADMIN'), userController.getAllUsers);
-
-// router
-//   .route('/profile/change-password')
-//   .put(verifyToken, allowedTo('USER'), userController.changePassword);
-// router
-//   .route('/profile')
-//   .get(verifyToken, allowedTo('USER'), userController.getProfile);
-// router.route('/profile/change-img').put(verifyToken, userController.changeIMG);
-// router
-//   .route('/:userId')
-//   .get(verifyToken, allowedTo('ADMIN'), userController.getUser)
-//   .patch(verifyToken, allowedTo('ADMIN'), userController.editUser)
-//   .delete(verifyToken, allowedTo('ADMIN'), userController.deleteUser);
-// router
-//   .route('/toggle-favourites')
-//   .post(verifyToken, userController.toggleFavourite);
-
-// module.exports = router;

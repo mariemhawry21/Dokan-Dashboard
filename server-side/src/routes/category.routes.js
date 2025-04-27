@@ -23,12 +23,26 @@ const router = express.Router();
 // GET all, CREATE
 router.route('/')
   .get(getAllCategories)
-  .post(upload.single('image'), createCategory);
+  .post(
+    (req, res, next) => {
+      req.folderName = 'categories';
+      next();
+    },
+    upload.single('image'),
+    createCategory
+  );
 
 // GET one, UPDATE, DELETE
 router.route('/:id')
-  .get(getCategoryById)
-  .put(upload.single('image'), updateCategory)
-  .delete(softDeleteCategory);
+.get(getCategoryById)
+.put(
+  (req, res, next) => {
+    req.folderName = 'categories';
+    next();
+  },
+  upload.single('image'),
+  updateCategory
+)
+.delete(softDeleteCategory);
 
 module.exports = router;

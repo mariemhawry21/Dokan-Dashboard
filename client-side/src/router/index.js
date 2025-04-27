@@ -1,89 +1,98 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory } from 'vue-router'
 
 // Layouts
-import AuthLayout from "../layouts/AuthLayout.vue";
-import MainLayout from "../layouts/AppLayout.vue";
+import AuthLayout from '../layouts/AuthLayout.vue'
+import MainLayout from '../layouts/AppLayout.vue'
 
 // Views
 import Dashboard from "../views/Dashboard.vue";
 import Products from "../views/Products.vue";
 import Login from "../views/Login.vue";
 import CustomerManagement from "../views/CustomerManagement.vue"
-
-// import Register from "../views/Register.vue"; // Add this
-import Orders from "../views/Orders.vue";
-import NotFound from "../views/NotFound.vue";
-
-//components
 import CustomerDetails from "../views/CustomerDetails.vue"
+// import Register from "../views/Register.vue"; // Add this
+import Orders from '../views/Orders.vue'
+import NotFound from '../views/NotFound.vue'
+import StoreConfig from '../views/StoreConfig.vue'
+import Requests from '../views/Requests.vue'
 
 const routes = [
   {
-    path: "/auth",
+    path: '/auth',
     component: AuthLayout,
     meta: { public: true },
     children: [
       {
-        path: "login",
-        name: "login",
-        component: Login,
+        path: 'login',
+        name: 'login',
+        component: Login
       },
       {
-        path: "/login",
-        redirect: "/auth/login",
-      },
-    ],
+        path: '/login',
+        redirect: '/auth/login'
+      }
+    ]
   },
 
   // Protected Routes (uses MainLayout)
   {
-    path: "/",
+    path: '/',
     component: MainLayout,
     children: [
       {
-        path: "",
-        name: "dashboard",
-        component: Dashboard,
+        path: '',
+        name: 'dashboard',
+        component: Dashboard
       },
       {
-        path: "dashboard",
-        redirect: { name: "dashboard" },
+        path: 'dashboard',
+        redirect: { name: 'dashboard' }
       },
       {
-        path: "products",
-        name: "products",
-        component: Products,
+        path: 'products',
+        name: 'Products',
+        component: Products
       },
       {
-        path: "orders",
-        name: "orders",
-        component: Orders,
+        path: 'orders',
+        name: 'orders',
+        component: Orders
+      },
+      {
+        path: 'config',
+        name: 'Configration',
+        component: StoreConfig
+      },
+      {
+        path: 'requests',
+        name: 'Requests',
+        component: Requests
       },
       {
         path: 'CustomerManagement',
         name: 'CustomerManagement',
-        component: CustomerManagement,
+        component: CustomerManagement
       },
       {
         path: 'CustomerDetails/:id',
         name: 'CustomerDetails',
-        component: CustomerDetails,
+        component: CustomerDetails
       }
-    ],
+    ]
   },
 
   // 404 Catch-all
   {
-    path: "/:pathMatch(.*)*",
+    path: '/:pathMatch(.*)*',
     component: NotFound,
-    meta: { public: true },
-  },
-];
+    meta: { public: true }
+  }
+]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes,
-});
+  routes
+})
 
 // Improved Auth Guard
 // router.beforeEach((to, from, next) => {
@@ -102,4 +111,4 @@ const router = createRouter({
 //   next();
 // });
 
-export default router;
+export default router
