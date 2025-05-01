@@ -87,7 +87,7 @@
 
           <v-divider></v-divider>
 
-          <v-card-text class="pa-6">
+          <v-card-text class="">
             <!-- Error state -->
             <v-alert v-if="error" type="error" variant="tonal" class="mb-6">
               {{ error }}

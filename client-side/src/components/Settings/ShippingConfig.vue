@@ -27,7 +27,7 @@
             :color="$vuetify.theme.current.dark ? 'surface' : 'white'"
           >
             <v-btn
-              :color="$vuetify.theme.current.dark ? 'dark-primary' : 'primary'"
+              color="secondary"
               @click="openShippingDialog(null)"
               class="w-100"
             >

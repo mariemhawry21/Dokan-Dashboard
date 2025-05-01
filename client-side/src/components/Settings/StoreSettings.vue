@@ -155,7 +155,7 @@
 
         <v-btn
           type="submit"
-          :color="$vuetify.theme.current.dark ? 'dark-primary' : 'primary'"
+          color='secondary'
           :disabled="
             settingsStore.loading ||
             !storeSettings.name ||
