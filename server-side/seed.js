@@ -552,105 +552,39 @@ const mongoose = require('mongoose');
 const { faker } = require('@faker-js/faker');
 const User = require('./src/models/user.model');
 
-// Connect to MongoDB
+// Connect to MongoDB (الاتصال بقاعدة بيانات dokan-dashboard)
 mongoose.connect(process.env.MONGODB_URI || "mongodb+srv://mariem:mariem2002@cluster0.qgg7s.mongodb.net/dokan_dashboard?retryWrites=true&w=majority")
   .then(() => {
-    console.log('Connected to MongoDB');
+    console.log('Connected to MongoDB - dokan_dashboard database');
     generateUsers();
   })
   .catch(err => console.error('MongoDB connection error:', err));
 
 const generateUsers = async () => {
   try {
-    // Step 1: Remove unique indexes before seeding users
-    await mongoose.connection.db.collection('users').dropIndex('reviews.reviewId_1')
-      .catch(err => console.log('Index reviews.reviewId_1 not found, skipping drop:', err));
-    console.log('Dropped unique index on reviews.reviewId');
+    // Step 1: Keep the Super Admin intact by finding their details
+    const superAdmin = await User.findOne({ role: 'superadmin' });
+    console.log('Super Admin found:', superAdmin);
 
-    await mongoose.connection.db.collection('users').dropIndex('incentives.incentiveId_1')
-      .catch(err => console.log('Index incentives.incentiveId_1 not found, skipping drop:', err));
-    console.log('Dropped unique index on incentives.incentiveId');
+    // Step 2: Clear existing users in test database (but without affecting super admin)
+    const testDb = mongoose.connection.useDb('test');
+    const usersToTransfer = await User.find({ role: { $ne: 'superadmin' } }).exec();
+    console.log(`${usersToTransfer.length} users to transfer`);
 
-    // Step 2: Clear existing users
-    await User.deleteMany({});
-    console.log('Cleared existing users');
+    // Insert only regular and admin users into test database, excluding super admin
+    if (usersToTransfer.length > 0) {
+      await testDb.collection('users').insertMany(usersToTransfer);
+      console.log(`Successfully transferred ${usersToTransfer.length} users to test.users`);
+    }
 
-    // Helper function to generate valid phone numbers
-    const generatePhone = () => faker.phone.number('##########').replace(/\D/g, '').slice(0, 15);
-
-    // Helper function to generate valid image URLs
-    const generateAvatar = () => {
-      const extensions = ['jpg', 'jpeg', 'png', 'gif'];
-      const ext = faker.helpers.arrayElement(extensions);
-      return `https://randomuser.me/api/portraits/${faker.helpers.arrayElement(['men', 'women'])}/${faker.number.int(100)}.${ext}`;
-    };
-
-    // Generate 100 regular users
-    const regularUsers = Array.from({ length: 100 }, () => ({
-      firstName: faker.person.firstName(),
-      lastName: faker.person.lastName(),
-      email: faker.internet.email().toLowerCase(),
-      mobile: generatePhone(),
-      addresses: [{
-        province: { id: faker.string.alphanumeric(5), name: faker.location.state() },
-        city: { 
-          id: faker.string.alphanumeric(5), 
-          provinceId: faker.string.alphanumeric(5), 
-          name: faker.location.city() 
-        },
-        street: faker.location.streetAddress(),
-        postalCode: faker.location.zipCode(),
-        isDefault: true,
-        location: {
-          type: "Point",
-          coordinates: [parseFloat(faker.location.longitude()), parseFloat(faker.location.latitude())]
-        }
-      }],
-      birthDate: faker.date.birthdate({ min: 18, max: 65, mode: 'age' }),
-      gender: faker.helpers.arrayElement(['male', 'female', 'other', 'prefer-not-to-say']),
-      avatar: generateAvatar(),
-      state: 'Active',
-      role: 'user',
-      status: 'approved',
-      // ... rest of your regular user fields
-    }));
-
-    // Generate 5 approved admins
-    const approvedAdmins = Array.from({ length: 5 }, () => ({
-      ...regularUsers[0], // Copy structure from regular user
-      role: 'admin',
-      status: 'approved',
-      adminRequest: true,
-      verification: {
-        emailVerified: true,
-        phoneVerified: true,
-        identityVerified: true,
-        verifiedAt: faker.date.recent()
-      }
-    }));
-
-    // Generate 5 pending admins
-    const pendingAdmins = Array.from({ length: 5 }, () => ({
-      ...approvedAdmins[0], // Copy structure from approved admin
-      status: 'pending',
-      verification: {
-        emailVerified: true,
-        phoneVerified: true,
-        identityVerified: false,
-        verifiedAt: null
-      }
-    }));
-
-    const users = [...regularUsers, ...approvedAdmins, ...pendingAdmins];
-    await User.insertMany(users);
-    console.log(`Successfully seeded ${users.length} users`);
-
+    // Close the connection
     await mongoose.connection.close();
   } catch (error) {
-    console.error('Error seeding users:', error);
+    console.error('Error during user transfer:', error);
     await mongoose.connection.close();
     process.exit(1);
   }
 };
+
 
 

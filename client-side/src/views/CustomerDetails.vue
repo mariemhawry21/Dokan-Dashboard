@@ -600,6 +600,13 @@
     customerStore.getCustomerActivityLog(route.params.id)
   )
 
+
+  onMounted(async () => {
+  loading.value = true
+  customer.value = await customerStore.getCustomerById(route.params.id)
+  loading.value = false
+})
+
   // Lifecycle
   onMounted(async () => {
     try {

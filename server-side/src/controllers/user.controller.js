@@ -1178,9 +1178,46 @@ const getAdminRequests = asyncWrapper(async (req, res, next) => {
   });
 });
 
+// في ملف controllers/user.controller.js
+const bulkDeleteUsers = asyncWrapper(async (req, res, next) => {
+  const { ids } = req.body;
+  
+  if (!ids || !Array.isArray(ids)) {
+    return next(new AppError('Please provide an array of user IDs', 400, httpStatusText.FAIL));
+  }
 
+  const result = await User.updateMany(
+    { _id: { $in: ids } },
+    { isActive: false, deletedAt: Date.now() }
+  );
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { deletedCount: result.modifiedCount }
+  });
+});
+
+const bulkUpdateUserStatus = asyncWrapper(async (req, res, next) => {
+  const { ids, status } = req.body;
+  
+  if (!ids || !Array.isArray(ids) || !status) {
+    return next(new AppError('Invalid request data', 400, httpStatusText.FAIL));
+  }
+
+  const result = await User.updateMany(
+    { _id: { $in: ids } },
+    { status }
+  );
+
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { updatedCount: result.modifiedCount }
+  });
+});
 
 module.exports = {
+  bulkDeleteUsers,
+  bulkUpdateUserStatus,
   getIncentives,
   addIncentive,
   getReviews,
