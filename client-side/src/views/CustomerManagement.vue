@@ -18,7 +18,7 @@
             <v-select
               v-model="customerStore.statusFilter"
               :items="statusOptions"
-              label="Status"
+              label="state"
               clearable
               hide-details
             />
@@ -264,7 +264,7 @@
     { title: 'Tags', key: 'tags' },
     { title: 'Total Spent', key: 'totalSpent', sortable: true },
     { title: 'Orders', key: 'ordersCount', sortable: true },
-    { title: 'Status', key: 'status' },
+    { title: 'state', key: 'state' },
     { title: 'Actions', key: 'actions', sortable: false }
   ])
   const deleteMessage = computed(

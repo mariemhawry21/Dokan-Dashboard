@@ -63,6 +63,11 @@ const userSchema = new mongoose.Schema(
         message: (props) => `${props.value} is not a valid image URL!`,
       },
     },
+    state: {
+      type: String,
+      enum: ["Active", "Block"],
+      default: "Active",
+    },
     role: {
       type: String,
       enum: ["user", "admin", "super_admin"],
