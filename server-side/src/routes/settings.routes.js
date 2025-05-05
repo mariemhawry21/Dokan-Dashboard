@@ -7,7 +7,7 @@ const allowedTo = require("../middlewares/allowTo.middleware");
 router.get(
   "/store",
   verifyToken,
-  allowedTo("SUPERADMIN"),
+  allowedTo("super_admin"),
   storeSettingsController.getStoreSettings
 );
 
@@ -15,15 +15,23 @@ router.get(
 router.put(
   "/store",
   verifyToken,
-  allowedTo("SUPERADMIN"),
+  allowedTo("super_admin"),
   storeSettingsController.updateStoreSettings
+);
+
+//get
+router.get(
+  "/shipping-methods",
+  verifyToken,
+  allowedTo("super_admin"),
+  storeSettingsController.getShippingMethods
 );
 
 // Add shipping method
 router.post(
   "/shipping-methods",
   verifyToken,
-  allowedTo("SUPERADMIN"),
+  allowedTo("super_admin"),
   storeSettingsController.addShippingMethod
 );
 
@@ -31,7 +39,7 @@ router.post(
 router.put(
   "/shipping-methods/:id",
   verifyToken,
-  allowedTo("SUPERADMIN"),
+  allowedTo("super_admin"),
   storeSettingsController.updateShippingMethod
 );
 
@@ -39,7 +47,7 @@ router.put(
 router.delete(
   "/shipping-methods/:id",
   verifyToken,
-  allowedTo("SUPERADMIN"),
+  allowedTo("super_admin"),
   storeSettingsController.deleteShippingMethod
 );
 

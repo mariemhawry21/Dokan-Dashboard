@@ -1,15 +1,16 @@
+
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
-      required: [true, "First name is required"],
+      // required: [true, "First name is required"],
       trim: true,
     },
     lastName: {
       type: String,
-      required: [true, "Last name is required"],
+      // required: [true, "Last name is required"],
       trim: true,
     },
     email: {
@@ -20,8 +21,13 @@ const userSchema = new mongoose.Schema(
         validator: function (v) {
           return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
         },
-        message: (props) => `${props.value} is not a valid email!`,
+        message: (props) => `${props.value} is not a valid email!`, 
       },
+    },
+    password: {
+      type: String,
+      required: [true, "Please add a password"],
+      minLength: 8,
     },
     mobile: {
       type: String,
@@ -29,7 +35,7 @@ const userSchema = new mongoose.Schema(
         validator: function (v) {
           return /^[0-9]{10,15}$/.test(v);
         },
-        message: (props) => `${props.value} is not a valid phone number!`,
+        message: (props) => `${props.value} is not a valid phone number!`, 
       },
     },
     addresses: [
@@ -60,7 +66,7 @@ const userSchema = new mongoose.Schema(
         validator: function (v) {
           return /^(https?:\/\/).+\.(jpg|jpeg|png|gif)$/i.test(v);
         },
-        message: (props) => `${props.value} is not a valid image URL!`,
+        message: (props) => `${props.value} is not a valid image URL!`, 
       },
     },
     state: {
@@ -259,7 +265,7 @@ const userSchema = new mongoose.Schema(
 
 // Virtuals
 userSchema.virtual("fullName").get(function () {
-  return `${this.firstName} ${this.lastName}`;
+  return `${this.firstName} ${this.lastName}`; 
 });
 
 userSchema.virtual("age").get(function () {

@@ -2,8 +2,9 @@
   import StoreSettings from '../components/Settings/StoreSettings.vue'
   import ShippingConfig from '../components/Settings/ShippingConfig.vue'
   import AdminRoleConfig from '../components/Settings/AdminRoleConfig.vue'
+  import Currencies from '../components/Settings/Currencies.vue'
   export default {
-    components: { StoreSettings, ShippingConfig, AdminRoleConfig }
+    components: { StoreSettings, ShippingConfig, AdminRoleConfig, Currencies }
   }
 </script>
 
@@ -15,6 +16,7 @@
     <ShippingConfig />
     <!-- User Roles Section -->
     <AdminRoleConfig />
+    <Currencies />
   </v-container>
 </template>
 

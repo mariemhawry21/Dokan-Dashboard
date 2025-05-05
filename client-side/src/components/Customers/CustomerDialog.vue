@@ -1,50 +1,59 @@
-<template>
+<!-- <template>
   <v-dialog v-model="internalDialog" max-width="800">
-    <v-card>
-      <v-card-title class="text-h5 font-weight-bold">
-        {{ mode === 'add' ? 'Add a New Customer' : 'Edit Customer' }}
+    <v-card :dir="locale === 'ar' ? 'rtl' : 'ltr'">
+      <v-card-title
+        class="text-h5 font-weight-bold"
+        :class="{ 'flex-row-reverse': locale === 'ar' }"
+      >
+        {{ props.mode === 'add' ? t('addCustomer') : t('editCustomer') }}
       </v-card-title>
-      <v-card-subtitle class="mb-4">Customer Information</v-card-subtitle>
+
+      <v-card-subtitle class="mb-4" :dir="locale === 'ar' ? 'rtl' : 'ltr'">
+        {{ t('customerInformation') }}
+      </v-card-subtitle>
 
       <v-card-text>
         <v-row>
           <v-col cols="12" md="6">
             <v-text-field
               v-model="form.firstName"
-              label="First Name"
+              :label="t('firstName')"
               :rules="[required]"
+              :dir="locale === 'ar' ? 'rtl' : 'ltr'"
             />
           </v-col>
           <v-col cols="12" md="6">
             <v-text-field
               v-model="form.lastName"
-              label="Last Name"
+              :label="t('lastName')"
               :rules="[required]"
+              :dir="locale === 'ar' ? 'rtl' : 'ltr'"
             />
           </v-col>
         </v-row>
 
         <v-text-field
           v-model="form.email"
-          label="Email"
+          :label="t('email')"
           type="email"
           :rules="[required, emailRule]"
+          :dir="locale === 'ar' ? 'rtl' : 'ltr'"
         />
 
-        <div class="d-flex align-center">
+        <div class="d-flex align-center" :dir="locale === 'ar' ? 'rtl' : 'ltr'">
           <v-select
             v-model="form.countryCode"
             :items="countries"
             item-title="label"
             item-value="code"
-            label="Country"
+            :label="t('country')"
             dense
             style="max-width: 150px"
             :rules="[required]"
           />
           <v-text-field
             v-model="form.mobile"
-            label="Mobile Number"
+            :label="t('mobileNumber')"
             class="ml-3"
             style="flex: 1"
             :prefix="form.countryCode || ''"
@@ -53,48 +62,47 @@
         </div>
 
         <v-switch
-          v-model="form.isBlocked"
-          label="Block this customer"
-          color="error"
-          class="mt-4"
+        v-model="form.isBlocked"
+      :label="t('blockCustomer')"
+      color="error"
+      class="mt-4"
+      :class="{ 'v-switch--reversed': locale === 'ar' }"
+      :dir="locale === 'ar' ? 'rtl' : 'ltr'"
         />
 
         <v-switch
           v-model="showAddress"
-          label="Add Address"
+          :label="t('addAddress')"
           color="primary"
           class="mt-4"
         />
 
         <div v-if="showAddress">
-          <v-subheader class="pl-0">Customer Address</v-subheader>
-          <v-text-field v-model="form.address.street" label="Street" />
-          <v-text-field v-model="form.address.city" label="City" />
-          <v-text-field v-model="form.address.state" label="State" />
-          <v-text-field v-model="form.address.zipCode" label="Zip Code" />
+          <v-subheader class="pl-0">{{ t('customerAddress') }}</v-subheader>
+          <v-text-field v-model="form.address.street" :label="t('street')" :dir="locale === 'ar' ? 'rtl' : 'ltr'" />
+          <v-text-field v-model="form.address.city" :label="t('city')" :dir="locale === 'ar' ? 'rtl' : 'ltr'" />
+          <v-text-field v-model="form.address.state" :label="t('state')" :dir="locale === 'ar' ? 'rtl' : 'ltr'" />
+          <v-text-field v-model="form.address.zipCode" :label="t('zipCode')" :dir="locale === 'ar' ? 'rtl' : 'ltr'" />
 
           <v-switch
             v-model="sameAsCustomer"
-            label="Billing address same as customer address"
+            :label="t('sameBillingAddress')"
             color="secondary"
             class="mt-3"
           />
 
           <div v-if="!sameAsCustomer">
             <v-divider class="my-3" />
-            <v-subheader class="pl-0">Billing Address</v-subheader>
-            <v-text-field v-model="form.billingAddress.street" label="Street" />
-            <v-text-field v-model="form.billingAddress.city" label="City" />
-            <v-text-field v-model="form.billingAddress.state" label="State" />
-            <v-text-field
-              v-model="form.billingAddress.zipCode"
-              label="Zip Code"
-            />
+            <v-subheader class="pl-0">{{ t('billingAddress') }}</v-subheader>
+            <v-text-field v-model="form.billingAddress.street" :label="t('street')" :dir="locale === 'ar' ? 'rtl' : 'ltr'" />
+            <v-text-field v-model="form.billingAddress.city" :label="t('city')" :dir="locale === 'ar' ? 'rtl' : 'ltr'" />
+            <v-text-field v-model="form.billingAddress.state" :label="t('state')" :dir="locale === 'ar' ? 'rtl' : 'ltr'" />
+            <v-text-field v-model="form.billingAddress.zipCode" :label="t('zipCode')" :dir="locale === 'ar' ? 'rtl' : 'ltr'" />
           </div>
         </div>
       </v-card-text>
 
-      <v-card-actions class="d-flex justify-start">
+      <v-card-actions class="d-flex justify-start" :class="{ 'flex-row-reverse': locale === 'ar' }">
         <v-btn
           variant="tonal"
           color="primary"
@@ -102,7 +110,7 @@
           :disabled="!isFormValid"
           style="height: 50px; border-radius: 12px;"
         >
-          {{ mode === 'add' ? 'Add' : 'Save' }}
+          {{ props.mode === 'add' ? t('add') : t('save') }}
         </v-btn>
         <v-btn
           variant="outlined"
@@ -111,17 +119,27 @@
           class="ml-2"
           style="height: 50px; border-radius: 12px;"
         >
-          Cancel
+          {{ t('cancel') }}
         </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
-
 <script setup>
 import { ref, computed, watch, defineProps, defineEmits } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 
-const props = defineProps({ 
+const { t, locale: i18nLocale } = useI18n()
+const locale = ref(i18nLocale.value)
+
+const toast = useToast()
+
+watch(i18nLocale, (newVal) => {
+  locale.value = newVal
+})
+
+const props = defineProps({
   modelValue: Boolean,
   mode: {
     type: String,
@@ -160,7 +178,6 @@ const form = ref({
   billingAddress: { street: '', city: '', state: '', zipCode: '' }
 })
 
-// Watch for customer prop changes (for edit mode)
 watch(() => props.customer, (customer) => {
   if (customer) {
     form.value = {
@@ -189,13 +206,13 @@ watch(() => props.customer, (customer) => {
   }
 }, { immediate: true })
 
-const required = v => !!v || 'This field is required'
-const emailRule = v => /.+@.+\..+/.test(v) || 'E-mail must be valid'
+const required = v => !!v || t('requiredField')
+const emailRule = v => /.+@.+\..+/.test(v) || t('invalidEmail')
 
 const isFormValid = computed(() => {
-  return form.value.firstName && 
-         form.value.lastName && 
-         form.value.email && 
+  return form.value.firstName &&
+         form.value.lastName &&
+         form.value.email &&
          form.value.countryCode &&
          form.value.mobile
 })
@@ -222,19 +239,38 @@ function handleCancel() {
 }
 
 function handleSubmit() {
-  const customerData = { 
+  const customerData = {
     ...form.value,
     mobile: form.value.countryCode + form.value.mobile
   }
-  
+
   if (!showAddress.value) {
     delete customerData.address
     delete customerData.billingAddress
   } else if (sameAsCustomer.value) {
     customerData.billingAddress = { ...customerData.address }
   }
-  
+
   emit('save', customerData)
+
+  toast.success(props.mode === 'add' ? t('customerAdded') : t('customerUpdated'))
+
   handleCancel()
 }
 </script>
+<style scoped>
+[dir="rtl"] .v-input__control {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .v-label {
+  right: 0;
+  left: auto;
+}
+
+.v-switch--reversed :deep(.v-selection-control) {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+</style> -->

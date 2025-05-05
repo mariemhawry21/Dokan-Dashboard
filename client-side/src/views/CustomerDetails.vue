@@ -3,7 +3,7 @@
     <!-- Back Button -->
     <v-btn color="primary" class="mb-4" @click="$router.push('/customers')">
       <v-icon left>mdi-arrow-left</v-icon>
-      Back to Customers List
+      {{ $t('customers.backToList') }}
     </v-btn>
 
     <!-- Loading State -->
@@ -13,7 +13,7 @@
     <template v-else>
       <!-- Customer Not Found -->
       <v-alert v-if="!customer" type="error" class="mb-4">
-        Customer not found
+        {{ $t('customers.notFound') }}
       </v-alert>
 
       <!-- Customer Details -->
@@ -37,7 +37,7 @@
                   small
                   class="mr-2"
                 >
-                  {{ customer.isBlocked ? 'Blocked' : 'Active' }}
+                  {{ customer.isBlocked ? $t('customers.blocked') : $t('customers.active') }}
                 </v-chip>
                 <span class="text-caption text-white">{{
                   customer.email
@@ -55,19 +55,19 @@
         <v-tabs v-model="tab" bg-color="primary" grow>
           <v-tab value="overview">
             <v-icon left>mdi-information</v-icon>
-            Overview
+            {{ $t('customers.overview') }}
           </v-tab>
           <v-tab value="orders">
             <v-icon left>mdi-shopping</v-icon>
-            Orders ({{ customer.ordersCount }})
+            {{ $t('customers.orders') }} ({{ customer.ordersCount }})
           </v-tab>
           <v-tab value="addresses">
             <v-icon left>mdi-map-marker</v-icon>
-            Addresses ({{ customer.addresses.length }})
+            {{ $t('customers.addresses') }} ({{ customer.addresses.length }})
           </v-tab>
           <v-tab value="activity">
             <v-icon left>mdi-history</v-icon>
-            Activity
+            {{ $t('customers.activity') }}
           </v-tab>
         </v-tabs>
 
@@ -124,7 +124,7 @@
                         <v-icon>mdi-calendar</v-icon>
                       </template>
                       <v-list-item-title>
-                        Join Date: {{ formatDate(customer.joinDate) }}
+                        {{ $t('customers.joinDate') }}: {{ formatDate(customer.joinDate) }}
                       </v-list-item-title>
                     </v-list-item>
 
@@ -133,7 +133,7 @@
                         <v-icon>mdi-cake</v-icon>
                       </template>
                       <v-list-item-title>
-                        Birth Date: {{ formatDate(customer.birthDate) }} (Age:
+                        {{ $t('customers.birthDate') }}: {{ formatDate(customer.birthDate) }} ({{ $t('customers.age') }}:
                         {{ calculateAge(customer.birthDate) }})
                       </v-list-item-title>
                     </v-list-item>
@@ -146,7 +146,7 @@
                 <v-card class="mb-4" elevation="2">
                   <v-card-title class="bg-primary-lighten-1">
                     <v-icon left>mdi-chart-bar</v-icon>
-                    Customer Statistics
+                    {{ $t('customers.customerStats') }}
                   </v-card-title>
                   <v-card-text>
                     <v-row>
@@ -158,7 +158,7 @@
                           <div class="text-h5 font-weight-bold">
                             {{ customer.ordersCount }}
                           </div>
-                          <div class="text-caption">Total Orders</div>
+                          <div class="text-caption">{{ $t('customers.totalOrders') }}</div>
                         </div>
                       </v-col>
                       <v-col cols="6" sm="3">
@@ -169,7 +169,7 @@
                           <div class="text-h5 font-weight-bold">
                             {{ formatCurrency(customer.totalSpent) }}
                           </div>
-                          <div class="text-caption">Total Spent</div>
+                          <div class="text-caption">{{ $t('customers.totalSpent') }}</div>
                         </div>
                       </v-col>
                       <v-col cols="6" sm="3">
@@ -186,7 +186,7 @@
                               )
                             }}
                           </div>
-                          <div class="text-caption">Average Order</div>
+                          <div class="text-caption">{{ $t('customers.avgOrder') }}</div>
                         </div>
                       </v-col>
                       <v-col cols="6" sm="3">
@@ -201,46 +201,23 @@
                                 : '--'
                             }}
                           </div>
-                          <div class="text-caption">Last Order</div>
+                          <div class="text-caption">{{ $t('customers.lastOrder') }}</div>
                         </div>
                       </v-col>
                     </v-row>
-                  </v-card-text> </v-card
-                ><v-card class="mb-4" elevation="2">
-                  <v-card-title class="bg-primary-lighten-1">
-                    <v-icon left>mdi-chart-bar</v-icon>
-                    Customer Statistics
-                  </v-card-title>
-                  <v-card-text class="pa-0">
-                    <v-row no-gutters>
-                      <v-col
-                        v-for="(stat, i) in customerStats"
-                        :key="i"
-                        cols="6"
-                        sm="3"
-                      >
-                        <div class="stat-card" :class="`stat-${i}`">
-                          <div class="stat-value">{{ stat.value }}</div>
-                          <div class="stat-label">{{ stat.label }}</div>
-                          <v-icon class="stat-icon">{{ stat.icon }}</v-icon>
-                        </div>
-                      </v-col>
-                    </v-row>
-                  </v-card-text>
+                  </v-card-text> 
                 </v-card>
 
                 <!-- Communication Preferences -->
                 <v-card class="mb-4" elevation="2">
                   <v-card-title class="bg-primary-lighten-1">
                     <v-icon left>mdi-bell</v-icon>
-                    Communication Preferences
+                    {{ $t('customers.communicationPrefs') }}
                   </v-card-title>
                   <v-card-text>
                     <v-chip-group>
                       <v-chip
-                        v-for="(
-                          enabled, method
-                        ) in customer.communicationPreferences"
+                        v-for="(enabled, method) in customer.communicationPreferences"
                         :key="method"
                         :color="enabled ? 'primary' : 'grey'"
                         :variant="enabled ? 'elevated' : 'outlined'"
@@ -256,13 +233,13 @@
                 <v-card elevation="2">
                   <v-card-title class="bg-primary-lighten-1">
                     <v-icon left>mdi-note</v-icon>
-                    Notes
+                    {{ $t('customers.notes') }}
                   </v-card-title>
                   <v-card-text>
                     <div v-if="customer.notes" class="text-body-1">
                       {{ customer.notes }}
                     </div>
-                    <div v-else class="text-grey">No notes available</div>
+                    <div v-else class="text-grey">{{ $t('customers.noNotes') }}</div>
                   </v-card-text>
                 </v-card>
               </v-col>
@@ -274,7 +251,7 @@
             <v-card class="ma-2" elevation="2">
               <v-card-title class="bg-primary-lighten-1">
                 <v-icon left>mdi-shopping</v-icon>
-                Order History
+                {{ $t('customers.orderHistory') }}
               </v-card-title>
               <v-card-text>
                 <v-data-table
@@ -315,7 +292,7 @@
             <v-card class="ma-2" elevation="2">
               <v-card-title class="bg-primary-lighten-1">
                 <v-icon left>mdi-map-marker</v-icon>
-                Customer Addresses
+                {{ $t('customers.customerAddresses') }}
               </v-card-title>
               <v-card-text>
                 <v-row>
@@ -330,38 +307,38 @@
                       border
                     >
                       <v-card-title>
-                        Address {{ index + 1 }}
+                        {{ $t('customers.address') }} {{ index + 1 }}
                         <v-chip
                           v-if="address.isDefault"
                           color="info"
                           small
                           class="ml-2"
                         >
-                          Default
+                          {{ $t('customers.default') }}
                         </v-chip>
                       </v-card-title>
                       <v-card-text>
                         <v-list density="compact">
                           <v-list-item>
-                            <v-list-item-title>Street:</v-list-item-title>
+                            <v-list-item-title>{{ $t('customers.street') }}:</v-list-item-title>
                             <v-list-item-subtitle>{{
                               address.street
                             }}</v-list-item-subtitle>
                           </v-list-item>
                           <v-list-item>
-                            <v-list-item-title>City:</v-list-item-title>
+                            <v-list-item-title>{{ $t('customers.city') }}:</v-list-item-title>
                             <v-list-item-subtitle>{{
                               address.city.name
                             }}</v-list-item-subtitle>
                           </v-list-item>
                           <v-list-item>
-                            <v-list-item-title>Province:</v-list-item-title>
+                            <v-list-item-title>{{ $t('customers.province') }}:</v-list-item-title>
                             <v-list-item-subtitle>{{
                               address.province.name
                             }}</v-list-item-subtitle>
                           </v-list-item>
                           <v-list-item>
-                            <v-list-item-title>Postal Code:</v-list-item-title>
+                            <v-list-item-title>{{ $t('customers.postalCode') }}:</v-list-item-title>
                             <v-list-item-subtitle>{{
                               address.postalCode
                             }}</v-list-item-subtitle>
@@ -374,7 +351,7 @@
                           variant="text"
                           @click="confirmDeleteAddress(address)"
                         >
-                          Delete
+                          {{ $t('common.delete') }}
                         </v-btn>
                         <v-btn
                           v-if="!address.isDefault"
@@ -382,7 +359,7 @@
                           variant="text"
                           @click="setDefaultAddress(address)"
                         >
-                          Set as Default
+                          {{ $t('customers.setDefault') }}
                         </v-btn>
                       </v-card-actions>
                     </v-card>
@@ -397,7 +374,7 @@
             <v-card class="ma-2" elevation="2">
               <v-card-title class="bg-primary-lighten-1">
                 <v-icon left>mdi-history</v-icon>
-                Activity Log
+                {{ $t('customers.activityLog') }}
               </v-card-title>
               <v-card-text>
                 <v-timeline side="end" align="start">
@@ -439,7 +416,7 @@
           <v-spacer></v-spacer>
           <v-btn color="secondary" variant="tonal" @click="editCustomer">
             <v-icon left>mdi-pencil</v-icon>
-            Edit Customer
+            {{ $t('common.edit') }}
           </v-btn>
           <v-btn
             :color="customer.isBlocked ? 'success' : 'error'"
@@ -449,14 +426,14 @@
             <v-tooltip activator="parent" location="top">
               {{
                 customer.isBlocked
-                  ? 'Unblock this customer'
-                  : 'Block this customer'
+                  ? $t('customers.unblockTooltip')
+                  : $t('customers.blockTooltip')
               }}
             </v-tooltip>
             <v-icon left>{{
               customer.isBlocked ? 'mdi-lock-open' : 'mdi-lock'
             }}</v-icon>
-            {{ customer.isBlocked ? 'Unblock' : 'Block' }}
+            {{ customer.isBlocked ? $t('customers.unblock') : $t('customers.block') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -464,7 +441,7 @@
       <!-- Add Address Dialog -->
       <v-dialog v-model="addAddressDialog" max-width="600">
         <v-card>
-          <v-card-title>Add New Address</v-card-title>
+          <v-card-title>{{ $t('customers.addAddress') }}</v-card-title>
           <v-card-text>
             <v-form @submit.prevent="saveAddress">
               <v-row>
@@ -474,7 +451,7 @@
                     :items="provinces"
                     item-title="name"
                     item-value="id"
-                    label="Province"
+                    :label="$t('customers.province')"
                     required
                   ></v-select>
                 </v-col>
@@ -484,7 +461,7 @@
                     :items="filteredCities"
                     item-title="name"
                     item-value="id"
-                    label="City"
+                    :label="$t('customers.city')"
                     required
                     :disabled="!newAddress.province"
                   ></v-select>
@@ -492,26 +469,26 @@
               </v-row>
               <v-text-field
                 v-model="newAddress.street"
-                label="Street"
+                :label="$t('customers.street')"
                 required
               ></v-text-field>
               <v-text-field
                 v-model="newAddress.postalCode"
-                label="Postal Code"
+                :label="$t('customers.postalCode')"
                 required
               ></v-text-field>
               <v-checkbox
                 v-model="newAddress.isDefault"
-                label="Set as default address"
+                :label="$t('customers.setDefaultAddress')"
               ></v-checkbox>
             </v-form>
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
             <v-btn color="secondary" @click="addAddressDialog = false"
-              >Cancel</v-btn
+              >{{ $t('common.cancel') }}</v-btn
             >
-            <v-btn color="primary" @click="saveAddress">Save</v-btn>
+            <v-btn color="primary" @click="saveAddress">{{ $t('common.save') }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -519,22 +496,18 @@
       <!-- Confirm Delete Address Dialog -->
       <ConfirmDialog
         ref="deleteAddressDialog"
-        title="Confirm Delete"
-        message="Are you sure you want to delete this address?"
-        confirm-text="Delete"
+        :title="$t('dialogs.deleteAddress.title')"
+        :message="$t('dialogs.deleteAddress.message')"
+        :confirm-text="$t('common.delete')"
         confirm-color="error"
         type="error"
         @confirm="deleteAddress"
       />
       <ConfirmDialog
         ref="blockStatusDialog"
-        :title="customer?.isBlocked ? 'Confirm Unblock' : 'Confirm Block'"
-        :message="
-          customer?.isBlocked
-            ? 'Are you sure you want to unblock this customer?'
-            : 'Are you sure you want to block this customer?'
-        "
-        confirm-text="Confirm"
+        :title="customer?.isBlocked ? $t('dialogs.unblockCustomer.title') : $t('dialogs.blockCustomer.title')"
+        :message="customer?.isBlocked ? $t('dialogs.unblockCustomer.message') : $t('dialogs.blockCustomer.message')"
+        :confirm-text="$t('common.confirm')"
         confirm-color="error"
         :type="customer?.isBlocked ? 'warning' : 'error'"
         @confirm="confirmToggleBlockStatus"
@@ -548,8 +521,10 @@
   import { useRoute, useRouter } from 'vue-router'
   import { useCustomerStore } from '../store/customers'
   import { useToast } from 'vue-toastification'
+  import { useI18n } from 'vue-i18n'
   import ConfirmDialog from '../components/Shared/ConfirmDialog.vue'
 
+  const { t } = useI18n()
   const route = useRoute()
   const router = useRouter()
   const customerStore = useCustomerStore()
@@ -575,11 +550,11 @@
 
   // Table headers
   const orderHeaders = [
-    { title: 'Order ID', key: 'id' },
-    { title: 'Date', key: 'orderDate' },
-    { title: 'Total', key: 'total' },
-    { title: 'Status', key: 'status' },
-    { title: 'Actions', key: 'actions', sortable: false }
+    { title: t('customers.orderId'), key: 'id' },
+    { title: t('customers.date'), key: 'orderDate' },
+    { title: t('customers.total'), key: 'total' },
+    { title: t('customers.status'), key: 'status' },
+    { title: t('common.actions'), key: 'actions', sortable: false }
   ]
 
   // Computed
@@ -655,9 +630,9 @@
 
   const formatCommunicationMethod = (method) => {
     const methods = {
-      email: 'Email',
-      sms: 'SMS',
-      whatsapp: 'WhatsApp'
+      email: t('customers.communicationMethods.email'),
+      sms: t('customers.communicationMethods.sms'),
+      whatsapp: t('customers.communicationMethods.whatsapp')
     }
     return methods[method] || method
   }
@@ -693,10 +668,10 @@
 
   const formatTier = (tier) => {
     const tiers = {
-      basic: 'Basic',
-      silver: 'Silver',
-      gold: 'Gold',
-      platinum: 'Platinum'
+      basic: t('customers.tiers.basic'),
+      silver: t('customers.tiers.silver'),
+      gold: t('customers.tiers.gold'),
+      platinum: t('customers.tiers.platinum')
     }
     return tiers[tier] || tier
   }
@@ -715,12 +690,12 @@
 
   const formatOrderStatus = (status) => {
     const statuses = {
-      pending: 'Pending',
-      processing: 'Processing',
-      shipped: 'Shipped',
-      delivered: 'Delivered',
-      cancelled: 'Cancelled',
-      refunded: 'Refunded'
+      pending: t('orders.statuses.pending'),
+      processing: t('orders.statuses.processing'),
+      shipped: t('orders.statuses.shipped'),
+      delivered: t('orders.statuses.delivered'),
+      cancelled: t('orders.statuses.cancelled'),
+      refunded: t('orders.statuses.refunded')
     }
     return statuses[status.toLowerCase()] || status
   }
@@ -751,12 +726,12 @@
 
   const formatActivityType = (type) => {
     const types = {
-      login: 'Login',
-      purchase: 'Purchase',
-      contact: 'Contact',
-      review: 'Review',
-      complaint: 'Complaint',
-      refund: 'Refund'
+      login: t('activity.types.login'),
+      purchase: t('activity.types.purchase'),
+      contact: t('activity.types.contact'),
+      review: t('activity.types.review'),
+      complaint: t('activity.types.complaint'),
+      refund: t('activity.types.refund')
     }
     return types[type] || type
   }
@@ -773,10 +748,10 @@
     try {
       await customerStore.toggleBlockStatus(customer.value.id)
       toast.success(
-        `Customer ${customer.value.isBlocked ? 'unblocked' : 'blocked'} successfully`
+        customer.value.isBlocked ? t('customers.unblockSuccess') : t('customers.blockSuccess')
       )
     } catch (error) {
-      toast.error('Error updating customer status')
+      toast.error(t('customers.statusUpdateError'))
     }
   }
 
@@ -785,8 +760,7 @@
   }
 
   const editAddress = (address) => {
-    // Implement edit logic
-    toast.info('Address editing will be implemented in the future')
+    toast.info(t('customers.addressEditComingSoon'))
   }
 
   const confirmDeleteAddress = (address) => {
@@ -800,19 +774,18 @@
         customer.value.id,
         addressToDelete.value.id
       )
-      toast.success('Address deleted successfully')
-      // No need to manually close the dialog, it's handled by the ConfirmDialog component
+      toast.success(t('customers.addressDeleted'))
     } catch (error) {
-      toast.error('Error deleting address')
+      toast.error(t('customers.addressDeleteError'))
     }
   }
 
   const setDefaultAddress = async (address) => {
     try {
       await customerStore.setDefaultAddress(customer.value.id, address.id)
-      toast.success('Default address set successfully')
+      toast.success(t('customers.defaultAddressSet'))
     } catch (error) {
-      toast.error('Error setting default address')
+      toast.error(t('customers.defaultAddressError'))
     }
   }
 
@@ -827,7 +800,7 @@
       }
 
       await customerStore.addAddress(customer.value.id, addressData)
-      toast.success('Address added successfully')
+      toast.success(t('customers.addressAdded'))
       addAddressDialog.value = false
       newAddress.value = {
         province: null,
@@ -837,7 +810,7 @@
         isDefault: false
       }
     } catch (error) {
-      toast.error('Error adding address')
+      toast.error(t('customers.addressAddError'))
     }
   }
 </script>
@@ -905,4 +878,23 @@
     opacity: 0.3;
     font-size: 2.5rem;
   }
+  [dir="rtl"] .v-input__control {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .v-label {
+  right: 0;
+  left: auto;
+}
+
+.v-switch--reversed :deep(.v-selection-control) {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.v-switch--reversed :deep(.v-label) {
+  padding-left: 0;
+  padding-right: 12px;
+}
 </style>

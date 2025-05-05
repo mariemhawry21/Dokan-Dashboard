@@ -14,12 +14,21 @@
       <span>{{ $t('shippingMethods') }}</span>
     </v-card-title>
     <v-card-text>
+      <SkeletonLoader
+        v-if="isLoading"
+        :columns="['Method Name', 'Cost', 'Actions']"
+        :rows="5"
+        :loading="isLoading"
+      />
       <v-data-table
         :dir="$i18n.locale === 'ar' ? 'rtl' : 'ltr'"
         :headers="shippingHeaders"
-        :items="shippingMethods"
-        :items-per-page="10"
+        :items="shippingStore.shippingMethods"
         class="elevation-1"
+        hide-default-footer
+        :page.sync="shippingStore.pagination.page"
+        :items-per-page="shippingStore.pagination.limit"
+        :server-items-length="shippingStore.pagination.total"
       >
         <template v-slot:top>
           <v-toolbar
@@ -27,7 +36,7 @@
             :color="$vuetify.theme.current.dark ? 'surface' : 'white'"
           >
             <v-btn
-              :color="$vuetify.theme.current.dark ? 'dark-primary' : 'primary'"
+              color="secondary"
               @click="openShippingDialog(null)"
               class="w-100"
             >
@@ -51,7 +60,7 @@
           <v-icon @click="openShippingDialog(item)" color="" class="mx-2"
             >mdi-pencil</v-icon
           >
-          <v-icon @click="deleteShippingMethod(item.id)" color="red"
+          <v-icon @click="confirmDelete(item._id)" color="red"
             >mdi-delete</v-icon
           >
         </template>
@@ -59,7 +68,34 @@
         <template v-slot:item.cost="{ item }">
           {{ formatCurrency(item.cost) }}
         </template>
+
+        <template v-slot:loading>
+          <v-progress-circular
+            indeterminate
+            color="primary"
+            size="64"
+            class="ma-auto"
+          ></v-progress-circular>
+        </template>
+
+        <template v-slot:no-data>
+          <div class="text-center py-12">
+            <v-icon size="96" color="grey lighten-1">mdi-truck-off</v-icon>
+            <p class="text-h4 grey--text mt-4">
+              {{ $t('noShippingMethods') }}
+            </p>
+          </div>
+        </template>
       </v-data-table>
+
+      <PaginationControls
+        v-model:page="shippingStore.pagination.page"
+        v-model:itemsPerPage="shippingStore.pagination.limit"
+        :total-items="shippingStore.pagination.total"
+        @update:page="handlePageChange"
+        @update:itemsPerPage="handleItemsPerPageChange"
+        class="mt-4"
+      />
 
       <!-- Shipping Method Dialog -->
       <v-dialog v-model="shippingDialog" max-width="500px" persistent>
@@ -99,10 +135,9 @@
                 </v-btn>
                 <v-btn
                   type="submit"
-                  :color="
-                    $vuetify.theme.current.dark ? 'dark-primary' : 'primary'
-                  "
+                  color="success"
                   :disabled="!isFormValid"
+                  :loading="shippingStore.loading"
                 >
                   {{ $t('save') }}
                 </v-btn>
@@ -111,163 +146,169 @@
           </v-card-text>
         </v-card>
       </v-dialog>
+
+      <!-- Delete Confirmation Dialog -->
+      <ConfirmDialog
+        ref="deleteConfirmDialog"
+        :title="$t('confirmDeleteTitle')"
+        :message="$t('confirmDeleteMessage')"
+        :confirm-text="$t('delete')"
+        :cancel-text="$t('cancel')"
+        confirm-color="error"
+        type="warning"
+        @confirm="onDeleteConfirmed"
+      />
     </v-card-text>
   </v-card>
 </template>
 
-<script>
+<script setup>
+  import { ref, computed, onMounted } from 'vue'
   import { useToast } from 'vue-toastification'
-  import { useSettingsStore } from '../../store/useSettingsStore'
+  import { useI18n } from 'vue-i18n'
+  import { useShippingStore } from '../../store/useShippingStore'
   import { useCurrencyStore } from '../../store/useCurrencyStore'
+  import PaginationControls from '../Shared/PaginationControls.vue'
+  import ConfirmDialog from '../Shared/ConfirmDialog.vue'
+  import SkeletonLoader from '../Shared/SkeletonLoader.vue'
 
-  export default {
-    setup() {
-      const settingsStore = useSettingsStore()
-      const currencyStore = useCurrencyStore()
-      const toast = useToast()
-      return { settingsStore, toast, currencyStore }
+  const { t } = useI18n()
+  const shippingStore = useShippingStore()
+  const currencyStore = useCurrencyStore()
+  const toast = useToast()
+  const isLoading = ref(true)
+
+  // Dialog state
+  const shippingDialog = ref(false)
+  const editingShipping = ref(false)
+  const shippingForm = ref(null)
+  const deleteConfirmDialog = ref(null)
+  const currentShipping = ref({
+    name: '',
+    cost: 0
+  })
+
+  // Form validation
+  const nameRules = [
+    (v) => !!v || t('fieldRequired'),
+    (v) => (v && v.length <= 50) || t('nameTooLong')
+  ]
+
+  const costRules = [
+    (v) => !!v || t('fieldRequired'),
+    (v) => !isNaN(v) || t('mustBeNumber'),
+    (v) => v >= 0 || t('mustBePositive')
+  ]
+
+  // Table headers
+  const shippingHeaders = computed(() => [
+    {
+      title: t('methodName'),
+      value: 'name',
+      sortable: true,
+      align: 'start'
     },
-    data() {
-      return {
-        shippingMethods: [
-          { id: 1, name: 'Standard Shipping', cost: 5.99 },
-          { id: 2, name: 'Express Shipping', cost: 12.99 },
-          { id: 3, name: 'International', cost: 24.99 }
-        ],
-        shippingDialog: false,
-        currentShipping: { name: '', cost: 0 },
-        editingShipping: false,
-        nameRules: [
-          (v) => !!v || 'Method name is required',
-          (v) => (v && v.length <= 50) || 'Name must be less than 50 characters'
-        ],
-        costRules: [
-          (v) => !!v || 'Cost is required',
-          (v) => !isNaN(v) || 'Must be a valid number',
-          (v) => v >= 0 || 'Cost cannot be negative'
-        ],
-        shippingToDelete: null
-      }
-    },
-    computed: {
-      shippingHeaders() {
-        return [
-          {
-            title: this.$t('methodName'),
-            value: 'name',
-            sortable: true,
-            align: 'start'
-          },
-          { title: this.$t('cost'), value: 'cost', sortable: true },
-          { title: this.$t('actions'), value: 'actions', sortable: false }
-        ]
-      },
-      isFormValid() {
-        return (
-          this.currentShipping.name.trim() !== '' &&
-          this.currentShipping.cost !== null &&
-          this.currentShipping.cost !== undefined &&
-          !isNaN(this.currentShipping.cost) &&
-          this.currentShipping.cost >= 0
-        )
-      }
-    },
-    methods: {
-      openShippingDialog(item) {
-        this.editingShipping = !!item
-        this.currentShipping = item ? { ...item } : { name: '', cost: 0 }
-        this.shippingDialog = true
-        this.$nextTick(() => {
-          if (this.$refs.shippingForm) {
-            this.$refs.shippingForm.resetValidation()
-          }
-        })
-      },
+    { title: t('cost'), value: 'cost', sortable: true },
+    { title: t('actions'), value: 'actions', sortable: false }
+  ])
 
-      closeShippingDialog() {
-        this.shippingDialog = false
-        if (this.$refs.shippingForm) {
-          this.$refs.shippingForm.resetValidation()
-        }
-      },
+  const isFormValid = computed(() => {
+    return (
+      currentShipping.value.name.trim() !== '' &&
+      currentShipping.value.cost !== null &&
+      !isNaN(currentShipping.value.cost) &&
+      currentShipping.value.cost >= 0
+    )
+  })
 
-      saveShippingMethod() {
-        if (this.$refs.shippingForm.validate()) {
-          if (this.editingShipping) {
-            const index = this.shippingMethods.findIndex(
-              (m) => m.id === this.currentShipping.id
-            )
-            this.shippingMethods.splice(index, 1, { ...this.currentShipping })
-          } else {
-            this.shippingMethods.push({
-              ...this.currentShipping,
-              id: Math.max(...this.shippingMethods.map((m) => m.id)) + 1
-            })
-          }
-          this.shippingDialog = false
-          this.toast.success(
-            this.editingShipping
-              ? this.$t('methodUpdated')
-              : this.$t('methodAdded')
-          )
-        }
-      },
+  // Pagination handlers
+const handlePageChange = async (newPage) => {
+  try {
+    isLoading.value = true
+    await shippingStore.fetchShippingMethods(newPage, shippingStore.pagination.limit)
+  } catch (error) {
+    toast.error(t('error.fetchMethods'))
+  } finally {
+    isLoading.value = false
+  }
+}
 
-      async confirmDelete(id) {
-        this.shippingToDelete = id
-        const confirmed = await this.showDeleteConfirmation()
-        if (confirmed) {
-          this.deleteShippingMethod()
-        }
-      },
+const handleItemsPerPageChange = async (newSize) => {
+  try {
+    isLoading.value = true
+    await shippingStore.fetchShippingMethods(1, newSize)
+  } catch (error) {
+    toast.error(t('error.fetchMethods'))
+  } finally {
+    isLoading.value = false
+  }
+}
+  // Dialog methods
+  const openShippingDialog = (item = null) => {
+    editingShipping.value = !!item
+    currentShipping.value = item ? { ...item } : { name: '', cost: 0 }
+    shippingDialog.value = true
+  }
 
-      deleteShippingMethod(id) {
-        console.log('deleted')
-
-        const originalLength = this.shippingMethods.length
-        this.shippingMethods = this.shippingMethods.filter((m) => m.id !== id)
-
-        if (this.shippingMethods.length < originalLength) {
-          this.toast.success(this.$t('methodDeleted'))
-        } else {
-          this.toast.error(this.$t('methodNotFound'))
-        }
-      },
-
-      showDeleteConfirmation() {
-        return new Promise((resolve) => {
-          this.toast.warning(this.$t('confirmDelete'), {
-            timeout: false,
-            closeOnClick: false,
-            draggable: false,
-            buttons: [
-              {
-                text: this.$t('delete'),
-                onClick: (_, toastObject) => {
-                  toastObject.goAway(0)
-                  resolve(true)
-                },
-                class: 'v-btn v-btn--flat v-btn--text error--text'
-              },
-              {
-                text: this.$t('cancel'),
-                onClick: (_, toastObject) => {
-                  toastObject.goAway(0)
-                  resolve(false)
-                },
-                class: 'v-btn v-btn--flat v-btn--text'
-              }
-            ]
-          })
-        })
-      },
-
-      // Update formatCurrency method to use selected currency
-      formatCurrency(value) {
-        return `${this.currencyStore.symbol}${(value * this.currencyStore.rate).toFixed(2)}`
-      }
+  const closeShippingDialog = () => {
+    shippingDialog.value = false
+    if (shippingForm.value) {
+      shippingForm.value.resetValidation()
     }
   }
+
+  // CRUD operations
+  const saveShippingMethod = async () => {
+    if (!shippingForm.value.validate()) return
+
+    try {
+      if (editingShipping.value) {
+        await shippingStore.updateShippingMethod(currentShipping.value)
+        toast.success(t('methodUpdated'))
+      } else {
+        await shippingStore.addShippingMethod(currentShipping.value)
+        toast.success(t('methodAdded'))
+      }
+      closeShippingDialog()
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
+
+  const confirmDelete = (id) => {
+    shippingStore.setItemToDelete(id)
+    deleteConfirmDialog.value.open()
+  }
+
+  const onDeleteConfirmed = async () => {
+    try {
+      await shippingStore.deleteShippingMethod(shippingStore.itemToDelete)
+      toast.success(t('methodDeleted'))
+      await shippingStore.fetchShippingMethods({
+        page: shippingStore.pagination.page,
+        limit: shippingStore.pagination.limit
+      })
+    } catch (error) {
+      toast.error(t('error.deleteMethod'))
+    }
+  }
+
+  // Currency formatting
+  const formatCurrency = (value) => {
+    return `${currencyStore.symbol}${(value * currencyStore.rate).toFixed(2)}`
+  }
+
+  // Initial load
+  onMounted(async() => {
+   try {
+    isLoading.value = true
+    await shippingStore.fetchShippingMethods()
+  } catch (error) {
+    toast.error(t('error.fetchMethods'))
+  } finally {
+    isLoading.value = false
+  }
+  })
 </script>
 
 <style scoped>

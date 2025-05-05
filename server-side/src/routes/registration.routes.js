@@ -13,6 +13,7 @@ const passport = require('passport');
 
 router.post('/signup', registerationController.signup);
 router.post('/login', registerationController.login);
+router.get("/check-approval", registerationController.checkApprovalStatus);
 router.get(
   '/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })

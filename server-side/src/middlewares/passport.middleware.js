@@ -35,6 +35,7 @@ passport.use(
             googleId: profile.id,
             email: profile.emails[0].value,
             thumbnail: profile._json.picture,
+            status: "pending",
           })
             .save()
             .then((newUser) => {

@@ -17,7 +17,20 @@ export const useSettingsStore = defineStore('settings', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.get('/api/settings')
+        const response = await axios.get(
+          'http://localhost:5000/settings/store',
+          {
+            params: {
+              page: params.page || this.pagination.currentPage,
+              limit: params.limit || this.pagination.itemsPerPage
+            },
+            headers: {
+              'Cache-Control': 'no-cache',
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              Pragma: 'no-cache'
+            }
+          }
+        )
         this.updateFromResponse(response.data)
       } catch (error) {
         this.handleError(error, 'Failed to fetch store settings')
@@ -26,19 +39,34 @@ export const useSettingsStore = defineStore('settings', {
       }
     },
 
-
-
     async fetchCurrencies() {
       try {
         const response = await axios.get('http://localhost:5000/api/currencies')
-        console.log(response.data)  
+        console.log(response.data)
         this.currencies = response.data
       } catch (error) {
         this.handleError(error, 'Failed to load currencies')
       }
     },
-    
+    async fetchShippingMethods(page = 1, limit = 10) {
+      this.loading = true
+      try {
+        const response = await axios.get(
+          'http://localhost:5000/settings/shipping-methods',
+          {
+            params: { page, limit }
+          }
+        )
 
+        this.shippingMethods = response.data.data.shippingMethods
+        this.pagination = response.data.data.pagination
+      } catch (error) {
+        this.error =
+          error.response?.data?.message || 'Failed to fetch shipping methods'
+      } finally {
+        this.loading = false
+      }
+    },
     async updateStoreSettings(updatedSettings) {
       this.loading = true
       this.error = null
@@ -57,21 +85,13 @@ export const useSettingsStore = defineStore('settings', {
       }
     },
 
-
-    // async setCurrency(currency) {
-    //   this.currency = currency
-    //   try {
-    //     await axios.put('/api/settings', { currency })
-    //   } catch (error) {
-    //     this.handleError(error, 'Failed to update currency')
-    //   }
-    // },
-
     async deleteShippingMethod(methodId) {
       this.loading = true
       this.error = null
       try {
-        await axios.delete(`/api/settings/shipping-methods/${methodId}`)
+        await axios.delete(
+          `http://localhost:5000/settings/shipping-methods/${methodId}`
+        )
         this.shippingMethods = this.shippingMethods.filter(
           (method) => method._id !== methodId
         )

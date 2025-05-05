@@ -1,4 +1,5 @@
 <script setup>
+
   import { RouterView } from 'vue-router'
   import AppLayout from './layouts/AppLayout.vue'
   import { watch, onMounted } from 'vue'

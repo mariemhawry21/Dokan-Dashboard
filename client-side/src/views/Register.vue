@@ -10,7 +10,7 @@ const valid = ref(false);
 const formRef = ref(null);
 
 const form = ref({
-    name: "",
+    username: "",
     email: "",
     phone: "",
     password: "",
@@ -28,7 +28,7 @@ const rules = {
     email: (v) => /.+@.+\..+/.test(v) || "Invalid email",
     phone: (v) => /^01[0-2,5]{1}[0-9]{8}$/.test(v) || "Invalid phone number",
     password: (v) =>
-        /^(?=.*[!@#$%^&*])(?=.{6,})/.test(v) || "Min 6 chars & one special character",
+        /^(?=.*[!@#$%^&*])(?=.{8,})/.test(v) || "Min 6 chars & one special character",
     confirmPassword: (v) =>
         v === form.value.password || "Passwords don't match",
 };
@@ -37,8 +37,8 @@ async function signup() {
 
     if (isValid) {
         try {
-            const response = await axios.post("http://localhost:3000/api/register", {
-                name: form.value.name,
+            const response = await axios.post("http://localhost:5000/auth/signup", {
+                username: form.value.username,
                 email: form.value.email,
                 phone: form.value.phone,
                 password: form.value.password,
@@ -77,7 +77,7 @@ console.log("SignUp component loaded");
                         </h2>
                     </div>
                     <v-form ref="formRef" v-model="valid" @submit.prevent="signup">
-                        <v-text-field class=" mb-3 custom-label" v-model="form.name" label="name"
+                        <v-text-field class=" mb-3 custom-label" v-model="form.username" label="username"
                             :rules="[rules.required]" density="compact" variant="outlined" dense autocomplete="off" />
                         <v-text-field class=" mb-3" v-model="form.email" label="Email"
                             :rules="[rules.required, rules.email]" density="compact" variant="outlined" dense

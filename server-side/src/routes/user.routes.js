@@ -93,12 +93,4 @@ router.get("/:id", adminAccess, userController.getUserById);
 router.patch("/:id", adminAccess, userController.updateUser);
 router.delete("/:id", superAdminAccess, userController.deleteUser);
 router.post("/:id/restore", superAdminAccess, userController.restoreUser);
-
-
-
-// في ملف routes/user.routes.js
-router.post('/bulk-delete', adminRole, userController.bulkDeleteUsers);
-router.patch('/bulk-update-status', adminRole, userController.bulkUpdateUserStatus);
-
-
 module.exports = router;

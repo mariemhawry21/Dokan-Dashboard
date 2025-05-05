@@ -1,12 +1,12 @@
-const userModel = require('../models/user.model');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const userModel = require("../models/user.model");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
-const transporter = require('../utils/emailTransporter');
-const userValidation = require('../utils/userValidation');
-const asyncWrapper = require('../middlewares/asyncWrapper.middleware');
-const AppError = require('../utils/appError');
-const httpStatusText = require('../utils/httpStatusText');
+const transporter = require("../utils/emailTransporter");
+const userValidation = require("../utils/userValidation");
+const asyncWrapper = require("../middlewares/asyncWrapper.middleware");
+const AppError = require("../utils/appError");
+const httpStatusText = require("../utils/httpStatusText");
 
 // Helper: Token Generator
 const generateToken = (payload, expiresIn = null) => {
@@ -18,19 +18,37 @@ const generateToken = (payload, expiresIn = null) => {
 // POST /signup
 const signup = asyncWrapper(async (req, res, next) => {
   const userData = req.body;
-  console.log('[SIGNUP] Received signup data:', userData.email);
+  console.log("[SIGNUP] Received signup data:", userData.email);
 
   if (!userValidation(userData)) {
-    console.warn('[SIGNUP] Invalid user data');
-    return next(new AppError('Invalid user data.', 400, httpStatusText.FAIL));
+    console.warn("[SIGNUP] Invalid user data");
+    return next(new AppError("Invalid user data.", 400, httpStatusText.FAIL));
+  }
+
+  const existingUserByUsername = await userModel.findOne({
+    username: userData.username,
+  });
+  if (existingUserByUsername) {
+    return next(new AppError("existing username", 400, httpStatusText.FAIL));
+  }
+
+  if (userData.mobile) {
+    const existingUserByMobile = await userModel.findOne({
+      mobile: userData.mobile,
+    });
+    if (existingUserByMobile) {
+      return next(
+        new AppError("existing phone number", 400, httpStatusText.FAIL)
+      );
+    }
   }
 
   const existingUser = await userModel.findOne({ email: userData.email });
   if (existingUser) {
-    console.warn('[SIGNUP] Email already exists:', userData.email);
+    console.warn("[SIGNUP] Email already exists:", userData.email);
     return next(
       new AppError(
-        'User with this email already exists.',
+        "User with this email already exists.",
         400,
         httpStatusText.FAIL
       )
@@ -39,34 +57,122 @@ const signup = asyncWrapper(async (req, res, next) => {
 
   const salt = await bcrypt.genSalt(10);
   userData.password = await bcrypt.hash(userData.password, salt);
+  userData.status = "pending";
 
   await userModel.create(userData);
-  console.log('[SIGNUP] User created successfully:', userData.email);
+  console.log("[SIGNUP] User created successfully:", userData.email);
 
   res.status(201).json({
     status: httpStatusText.SUCCESS,
-    message: 'User signed up successfully',
+    message: "User signed up successfully",
   });
 });
 
 // POST /login
+// const login = asyncWrapper(async (req, res, next) => {
+//   const { email, password } = req.body;
+//   console.log("[LOGIN] Attempted login with email:", email);
+//   console.log("[LOGIN] Password from request:", password);
+
+//   const user = await userModel.findOne({ email }).select("+password");
+//   console.log("[LOGIN] User password from DB (Hashed):", user.password);
+//   if (!user) {
+//     console.warn("[LOGIN] Email not found:", email);
+//     return next(
+//       new AppError("Invalid email or password.", 400, httpStatusText.FAIL)
+//     );
+//   }
+//    console.log("[LOGIN] Full user object from DB:", user);
+//    console.log("[LOGIN] User password from DB (Hashed):", user.password);
+//   if (user.status === "pending") {
+//     return next(
+//       new AppError(
+//         "Your account is pending approval.",
+//         403,
+//         httpStatusText.FAIL
+//       )
+//     );
+//   } else if (user.status === "denied") {
+//     return next(
+//       new AppError(
+//         `Your account has been denied. Reason: ${
+//           user.denialReason || "No reason provided."
+//         }`,
+//         403,
+//         httpStatusText.FAIL
+//       )
+//     );
+//   }
+//   const isPasswordValid = await bcrypt.compare(password, user.password);
+//   if (!isPasswordValid) {
+//     console.warn("[LOGIN] Invalid password for:", email);
+//     return next(
+//       new AppError("Invalid email or password.", 400, httpStatusText.FAIL)
+//     );
+//   }
+
+//   const token = generateToken({
+//     _id: user._id,
+//     email: user.email,
+//     username: user.username,
+//     role: user.role,
+//     thumbnail: user.thumbnail,
+//   });
+
+//   console.log("[LOGIN] User logged in:", email);
+
+//   res.status(200).json({
+//     status: httpStatusText.SUCCESS,
+//     message: "Logged in successfully",
+//     data: { token },
+//   });
+// });
 const login = asyncWrapper(async (req, res, next) => {
   const { email, password } = req.body;
-  console.log('[LOGIN] Attempted login with email:', email);
 
-  const user = await userModel.findOne({ email });
+  console.log('[LOGIN] Attempted login with email:', email);
+  console.log("[LOGIN] Password from request:", password);
+
+  const user = await userModel.findOne({ email }).select("+password");
   if (!user) {
-    console.warn('[LOGIN] Email not found:', email);
+    console.warn("[LOGIN] Email not found:", email);
     return next(
-      new AppError('Invalid email or password.', 400, httpStatusText.FAIL)
+      new AppError("Invalid email or password.", 400, httpStatusText.FAIL)
     );
   }
 
+  console.log(
+    "[LOGIN] User password from DB (Hashed) - Before Full Object:",
+    user.password
+  );
+  console.log("[LOGIN] Full user object from DB:", user);
+  console.log(
+    "[LOGIN] User password from DB (Hashed) - After Full Object:",
+    user.password
+  );
+  if (user.status === "pending") {
+    return next(
+      new AppError(
+        "Your account is pending approval.",
+        403,
+        httpStatusText.FAIL
+      )
+    );
+  } else if (user.status === "denied") {
+    return next(
+      new AppError(
+        `Your account has been denied. Reason: ${user.denialReason || "No reason provided."
+        }`,
+        403,
+        httpStatusText.FAIL
+      )
+    );
+  }
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
-    console.warn('[LOGIN] Invalid password for:', email);
+    console.warn("[LOGIN] Invalid password for:", email);
     return next(
-      new AppError('Invalid email or password.', 400, httpStatusText.FAIL)
+      new AppError("Invalid email or password.", 400, httpStatusText.FAIL)
     );
   }
 
@@ -78,18 +184,52 @@ const login = asyncWrapper(async (req, res, next) => {
     thumbnail: user.thumbnail,
   });
 
-  console.log('[LOGIN] User logged in:', email);
+  console.log("[LOGIN] User logged in:", email);
 
   res.status(200).json({
     status: httpStatusText.SUCCESS,
-    message: 'Logged in successfully',
+    message: "Logged in successfully",
     data: { token },
   });
 });
 
+
+// check approval
+const checkApprovalStatus = async (req, res) => {
+  const { email } = req.query;
+  console.log(`[CHECK APPROVAL] Checking status for email: ${email}`);
+
+  if (!email) {
+    return res
+      .status(400)
+      .json({ status: "error", message: "Email is required" });
+  }
+
+  try {
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      console.warn(`[CHECK APPROVAL] User not found with email: ${email}`);
+      return res
+        .status(404)
+        .json({ status: "error", message: "User not found" });
+    }
+
+    res.status(200).json({
+      status: "success",
+      isApproved: user.status === "approved",
+      isRejected: user.status === "denied",
+      userStatus: user.status,
+    });
+  } catch (error) {
+    console.error("[CHECK APPROVAL] Error checking user status:", error);
+    res.status(500).json({ status: "error", message: "Internal server error" });
+  }
+};
+
 // GET /auth/google/callback
 const google = (req, res) => {
-  console.log('[GOOGLE AUTH] Google login callback for:', req.user.email);
+  console.log("[GOOGLE AUTH] Google login callback for:", req.user.email);
 
   const token = generateToken({
     _id: req.user._id,
@@ -99,18 +239,18 @@ const google = (req, res) => {
     thumbnail: req.user.thumbnail,
   });
 
-  console.log('[GOOGLE AUTH] Redirecting with token');
+  console.log("[GOOGLE AUTH] Redirecting with token");
   res.redirect(`http://localhost:4200/auth/login?token=${token}`);
 };
 
 // POST /forgot-password
 const forgotPassword = asyncWrapper(async (req, res, next) => {
   const { email } = req.body;
-  console.log('[FORGOT PASSWORD] Request for:', email);
+  console.log("[FORGOT PASSWORD] Request for:", email);
 
   const user = await userModel.findOne({ email });
   if (!user) {
-    console.warn('[FORGOT PASSWORD] Email not found:', email);
+    console.warn("[FORGOT PASSWORD] Email not found:", email);
     return next(
       new AppError(
         "User with this email doesn't exist.",
@@ -120,7 +260,7 @@ const forgotPassword = asyncWrapper(async (req, res, next) => {
     );
   }
 
-  const resetToken = generateToken({ email: user.email }, '10m');
+  const resetToken = generateToken({ email: user.email }, "10m");
   user.resetToken = resetToken;
   user.resetTokenExpiry = Date.now() + 10 * 60 * 1000;
 
@@ -131,22 +271,22 @@ const forgotPassword = asyncWrapper(async (req, res, next) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: user.email,
-    subject: 'Reset Password',
+    subject: "Reset Password",
     text: `Dear ${user.username},\n\nClick the link to reset your password: ${resetLink}`,
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
-      console.error('[EMAIL] Failed to send reset email:', error);
+      console.error("[EMAIL] Failed to send reset email:", error);
       return next(
-        new AppError('Error sending email.', 500, httpStatusText.ERROR)
+        new AppError("Error sending email.", 500, httpStatusText.ERROR)
       );
     }
 
-    console.log('[EMAIL] Reset email sent to:', user.email);
+    console.log("[EMAIL] Reset email sent to:", user.email);
     res.status(200).json({
       status: httpStatusText.SUCCESS,
-      message: 'Email sent successfully.',
+      message: "Email sent successfully.",
     });
   });
 });
@@ -154,13 +294,13 @@ const forgotPassword = asyncWrapper(async (req, res, next) => {
 // POST /reset-password
 const resetPassword = asyncWrapper(async (req, res, next) => {
   const { token, password } = req.body;
-  console.log('[RESET PASSWORD] Token received:', token);
+  console.log("[RESET PASSWORD] Token received:", token);
 
   const user = await userModel.findOne({ resetToken: token });
   if (!user || user.resetTokenExpiry < Date.now()) {
-    console.warn('[RESET PASSWORD] Invalid or expired token.');
+    console.warn("[RESET PASSWORD] Invalid or expired token.");
     return next(
-      new AppError('Invalid or expired token.', 400, httpStatusText.FAIL)
+      new AppError("Invalid or expired token.", 400, httpStatusText.FAIL)
     );
   }
 
@@ -171,26 +311,26 @@ const resetPassword = asyncWrapper(async (req, res, next) => {
 
   await user.save();
 
-  console.log('[RESET PASSWORD] Password reset for:', user.email);
+  console.log("[RESET PASSWORD] Password reset for:", user.email);
 
   res.status(200).json({
     status: httpStatusText.SUCCESS,
-    message: 'Password reset successfully.',
+    message: "Password reset successfully.",
   });
 });
 
 // POST /logout
 const logout = asyncWrapper(async (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  
+  const token = req.headers.authorization?.split(" ")[1];
+
   if (!token) {
-    console.warn('[LOGOUT] No token provided');
-    return next(new AppError('Token is required', 400, httpStatusText.FAIL));
+    console.warn("[LOGOUT] No token provided");
+    return next(new AppError("Token is required", 400, httpStatusText.FAIL));
   }
 
   res.status(200).json({
     status: httpStatusText.SUCCESS,
-    message: 'Logged out successfully.',
+    message: "Logged out successfully.",
   });
 });
 
@@ -201,4 +341,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   logout,
+  checkApprovalStatus,
 };

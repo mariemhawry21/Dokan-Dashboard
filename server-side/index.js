@@ -1,53 +1,56 @@
-const express = require('express');
+const express = require("express");
 const app = express();
+const path = require('path');
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
 const cors = require('cors');
 require('dotenv').config();
-const cloudinary = require('./src/config/cloudinary.config');
+const passport = require('passport');
+require("dotenv").config();
+const cloudinary = require("./src/config/cloudinary.config");
 
 // Scripts to run
-require('./src/middlewares/passport.middleware');
-require('./src/services/orderStatus.service');
+require("./src/middlewares/passport.middleware");
+require("./src/services/orderStatus.service");
 
-const passport = require('passport');
 
 /* * * * Utils * * * * */
-const httpStatusText = require('./src/utils/httpStatusText');
+const httpStatusText = require("./src/utils/httpStatusText");
 /* * * * End Utils * * * * */
 
 const PORT = process.env.PORT || 5000;
 app.use(passport.initialize());
 
 /* * * * DB * * * * */
-const connectDB = require('./src/config/db');
+const connectDB = require("./src/config/db");
 /* * * * End Db * * * * */
 // const seedData = require("./seed");
 
 /* * * * Router imports * * * * */
-const registerationRouter = require('./src/routes/registration.routes');
-const userRouter = require('./src/routes/user.routes');
-const categoreRouter = require('./src/routes/category.routes');
-const productRouter = require('./src/routes/product.routes');
-const postRouter = require('./src/routes/post.routes');
-const checkoutRouter = require('./src/routes/checkout.routes');
-const cartRouter = require('./src/routes/cart.routes');
-const galleryRouter = require('./src/routes/gallery.routes');
-const contactRouter = require('./src/routes/contact.routes');
-const orderRouter = require('./src/routes/order.routes');
-const paymentRouter = require('./src/routes/payment.routes');
+const registerationRouter = require("./src/routes/registration.routes");
+const userRouter = require("./src/routes/user.routes");
+const categoreRouter = require("./src/routes/category.routes");
+const productRouter = require("./src/routes/product.routes");
+const postRouter = require("./src/routes/post.routes");
+const checkoutRouter = require("./src/routes/checkout.routes");
+const cartRouter = require("./src/routes/cart.routes");
+const galleryRouter = require("./src/routes/gallery.routes");
+const contactRouter = require("./src/routes/contact.routes");
+const orderRouter = require("./src/routes/order.routes");
+const paymentRouter = require("./src/routes/payment.routes");
 const settingsRouter = require("./src/routes/settings.routes");
-
+const statsRouter = require("./src/routes/stats.routes");
 /* * * * End Router imports * * * * */
 
 // Connect to MongoDB
 connectDB();
 
 // Middlewares
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/', (req, res) => {
-  res.json('You need furniture? Here’s Furniro!');
+app.get("/", (req, res) => {
+  res.json("You need furniture? Here’s Furniro!");
 });
 
 /* * * Routes * * * */
@@ -67,10 +70,10 @@ app.use('/api/currencies', require('./src/routes/currencies'));
 
 
 /* * * Global MiddleWare * * * */
-app.all('*', (req, res, next) => {
+app.all("*", (req, res, next) => {
   return res.status(404).json({
     status: httpStatusText.ERROR,
-    message: 'this resource is not available',
+    message: "this resource is not available",
   });
 });
 

@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import axios from "axios";
 import { useAuthStore } from "../store/auth";
 
+
 const router = useRouter();
 const authStore =useAuthStore();
 const formRef =ref(null);
@@ -26,15 +27,18 @@ async function login() {
 
     if(isValid){
         try {
-            const response = await axios.post("http://localhost:3000/api/login",{
+            const response = await axios.post("http://localhost:5000/auth/login",{
                 email: form.value.email,
                 password:form.value.password,
             });
             console.log("Login successful:",response.data);
 
-            authStore.setToken(response.data.token);
+            const token = response.data.data.token;  // Correct token path
+            authStore.setToken(token);  // Store token in Pinia
 
-            localStorage.setItem('token',response.data.token);
+            // Token is automatically stored in Pinia, no need to store manually in localStorage
+            localStorage.setItem('token', token);  // Optionally keep token in localStorage
+
 
             router.push('/dashboard')
             
