@@ -27,27 +27,27 @@ router.patch("/profile/avatar", avatarUpload, userController.updateAvatar);
 router.patch("/profile/password", userController.changePassword);
 
 // ===== User Management (Admin Access) =====
-router.get("/:id", adminAccess, userController.getUserById);
-router.patch("/:id", adminAccess, userController.updateUser);
-router.delete("/:id", superAdminAccess, userController.deleteUser);
-router.post("/:id/restore", superAdminAccess, userController.restoreUser);
+router.get("/:id",userController.getUserById);
+router.patch("/:id", userController.updateUser);
+router.delete("/:id",userController.deleteUser);
+router.post("/:id/restore", userController.restoreUser);
 
 // ===== Activities =====
-router.post("/:id/activities", adminAccess, userController.addActivity);
-router.get("/:id/activities", adminAccess, userController.getActivities);
+router.post("/:id/activities", userController.addActivity);
+router.get("/:id/activities",  userController.getActivities);
 
 // ===== Support Tickets =====
-router.post("/:id/tickets", supportAccess, userController.createTicket);
-router.get("/:id/tickets", supportAccess, userController.getTickets);
-router.patch("/:id/tickets/:ticketId", supportAccess, userController.updateTicket);
+router.post("/:id/tickets", userController.createTicket);
+router.get("/:id/tickets",  userController.getTickets);
+router.patch("/:id/tickets/:ticketId",  userController.updateTicket);
 
 // ===== Credit Management =====
-router.post("/:id/credit", accountantAccess, userController.addCredit);
-router.get("/:id/credit", adminAccess, userController.getCreditHistory);
+router.post("/:id/credit", userController.addCredit);
+router.get("/:id/credit",userController.getCreditHistory);
 
 // ===== Special Cases =====
-router.post("/:id/special-cases", adminAccess, userController.addSpecialCase);
-router.get("/:id/special-cases", adminAccess, userController.getSpecialCases);
+router.post("/:id/special-cases",  userController.addSpecialCase);
+router.get("/:id/special-cases",  userController.getSpecialCases);
 
 // ===== Reviews =====
 router.post("/:id/reviews", userController.addReview);
@@ -58,19 +58,19 @@ router.post("/:id/incentives", adminAccess, userController.addIncentive);
 router.get("/:id/incentives", adminAccess, userController.getIncentives);
 
 // ===== Tags Management =====
-router.post("/:id/tags", adminRole, userController.assignUserTags);
-router.delete("/:id/tags", adminRole, userController.removeUserTags);
+router.post("/:id/tags", userController.assignUserTags);
+router.delete("/:id/tags", userController.removeUserTags);
 
 // ===== Segments Management =====
-router.post("/:id/segments", adminRole, userController.assignSegment);
-router.delete("/:id/segments/:segmentName", adminRole, userController.removeSegment);
+router.post("/:id/segments",  userController.assignSegment);
+router.delete("/:id/segments/:segmentName", userController.removeSegment);
 
 // ===== User Queries (Filter) =====
-router.get("/by-tag/:tag", adminRole, userController.getUsersByTag);
-router.get("/by-segment/:segment", adminRole, userController.getUsersBySegment);
+router.get("/by-tag/:tag", userController.getUsersByTag);
+router.get("/by-segment/:segment",  userController.getUsersBySegment);
 
 // ===== Tier Management =====
-router.patch("/:id/tier", adminRole, userController.updateCustomerTier);
+router.patch("/:id/tier", userController.updateCustomerTier);
 
 // ===== User Status Management =====
 router.get("/pending", adminRole, userController.getPendingUsers);

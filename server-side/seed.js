@@ -540,127 +540,117 @@
 //   }
 // };
 
-require("dotenv").config();
-const mongoose = require("mongoose");
-const connectDB = require("./src/config/db");
-const User = require("./src/models/user.model");
+// 
+
+
+
+
+
+
+
+const mongoose = require('mongoose');
 const { faker } = require('@faker-js/faker');
-const { ObjectId } = mongoose.Types;
+const User = require('./src/models/user.model');
 
-// Country-specific data generators
-const countryData = {
-  SA: {
-    country: "Saudi Arabia",
-    mobilePrefix: "05",
-    provinces: ["Riyadh", "Makkah", "Madinah", "Eastern Province", "Qassim", "Asir", "Tabuk", "Hail", "Northern Borders", "Jazan", "Najran", "Bahah", "Jawf"],
-    cities: ["Riyadh", "Jeddah", "Mecca", "Medina", "Dammam", "Khobar", "Taif", "Tabuk", "Abha"]
-  },
-  AE: {
-    country: "United Arab Emirates",
-    mobilePrefix: "05",
-    provinces: ["Abu Dhabi", "Dubai", "Sharjah", "Ajman", "Umm Al-Quwain", "Ras Al Khaimah", "Fujairah"],
-    cities: ["Dubai", "Abu Dhabi", "Sharjah", "Al Ain", "Ajman", "Ras Al Khaimah", "Fujairah"]
-  },
-  EG: {
-    country: "Egypt",
-    mobilePrefix: "01",
-    provinces: ["Cairo", "Alexandria", "Giza", "Sharqia", "Dakahlia", "Beheira", "Monufia", "Qalyubia", "Gharbia"],
-    cities: ["Cairo", "Alexandria", "Giza", "Shubra El-Kheima", "Port Said", "Suez", "Luxor", "Mansoura", "Tanta"]
-  }
-};
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI || "mongodb+srv://mariem:mariem2002@cluster0.qgg7s.mongodb.net/dokan_dashboard?retryWrites=true&w=majority")
+  .then(() => {
+    console.log('Connected to MongoDB');
+    generateUsers();
+  })
+  .catch(err => console.error('MongoDB connection error:', err));
 
-// Generate realistic customers from GCC countries
-const generateGCCCustomers = (count = 30) => {
-  const customers = [];
-  
-  for (let i = 0; i < count; i++) {
-    const countryCode = faker.helpers.arrayElement(["SA", "AE", "EG"]);
-    const countryInfo = countryData[countryCode];
-    const firstName = faker.person.firstName();
-    const lastName = faker.person.lastName();
-    const email = faker.internet.email({ firstName, lastName }).toLowerCase();
-    const mobile = `${countryInfo.mobilePrefix}${faker.number.int({ min: 10000000, max: 99999999 })}`;
-    
-    customers.push({
-      firstName,
-      lastName,
-      email,
-      mobile,
-      password: `Customer${i+1}@123`, // Strong password
-      role: "user",
-      status: "approved",
-      joinDate: faker.date.past({ years: 2 }),
-      isBlocked: false,
-      verification: {
-        emailVerified: faker.datatype.boolean(),
-        phoneVerified: faker.datatype.boolean(),
-        identityVerified: false
-      },
-      communicationPreferences: {
-        email: true,
-        sms: faker.datatype.boolean(),
-        whatsapp: faker.datatype.boolean(),
-        pushNotifications: true
-      },
+const generateUsers = async () => {
+  try {
+    // Step 1: Remove unique indexes before seeding users
+    await mongoose.connection.db.collection('users').dropIndex('reviews.reviewId_1')
+      .catch(err => console.log('Index reviews.reviewId_1 not found, skipping drop:', err));
+    console.log('Dropped unique index on reviews.reviewId');
+
+    await mongoose.connection.db.collection('users').dropIndex('incentives.incentiveId_1')
+      .catch(err => console.log('Index incentives.incentiveId_1 not found, skipping drop:', err));
+    console.log('Dropped unique index on incentives.incentiveId');
+
+    // Step 2: Clear existing users
+    await User.deleteMany({});
+    console.log('Cleared existing users');
+
+    // Helper function to generate valid phone numbers
+    const generatePhone = () => faker.phone.number('##########').replace(/\D/g, '').slice(0, 15);
+
+    // Helper function to generate valid image URLs
+    const generateAvatar = () => {
+      const extensions = ['jpg', 'jpeg', 'png', 'gif'];
+      const ext = faker.helpers.arrayElement(extensions);
+      return `https://randomuser.me/api/portraits/${faker.helpers.arrayElement(['men', 'women'])}/${faker.number.int(100)}.${ext}`;
+    };
+
+    // Generate 100 regular users
+    const regularUsers = Array.from({ length: 100 }, () => ({
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
+      email: faker.internet.email().toLowerCase(),
+      mobile: generatePhone(),
       addresses: [{
-        country: countryInfo.country,
-        province: { 
-          id: faker.number.int({ min: 1, max: 20 }).toString(),
-          name: faker.helpers.arrayElement(countryInfo.provinces)
-        },
-        city: {
-          id: faker.number.int({ min: 1, max: 50 }).toString(),
-          provinceId: faker.number.int({ min: 1, max: 20 }).toString(),
-          name: faker.helpers.arrayElement(countryInfo.cities)
+        province: { id: faker.string.alphanumeric(5), name: faker.location.state() },
+        city: { 
+          id: faker.string.alphanumeric(5), 
+          provinceId: faker.string.alphanumeric(5), 
+          name: faker.location.city() 
         },
         street: faker.location.streetAddress(),
         postalCode: faker.location.zipCode(),
-        isDefault: true
+        isDefault: true,
+        location: {
+          type: "Point",
+          coordinates: [parseFloat(faker.location.longitude()), parseFloat(faker.location.latitude())]
+        }
       }],
-      ordersCount: faker.number.int({ min: 0, max: 50 }),
-      totalSpent: faker.number.int({ min: 0, max: 10000 }),
-      lastOrderDate: faker.date.recent(),
-      lastSiteVisit: faker.date.recent(),
-      isSubscribedToNewsletter: faker.datatype.boolean(),
-      customerTier: calculateCustomerTier(faker.number.int({ min: 0, max: 10000 }))
-    });
-  }
-  
-  return customers;
-};
+      birthDate: faker.date.birthdate({ min: 18, max: 65, mode: 'age' }),
+      gender: faker.helpers.arrayElement(['male', 'female', 'other', 'prefer-not-to-say']),
+      avatar: generateAvatar(),
+      state: 'Active',
+      role: 'user',
+      status: 'approved',
+      // ... rest of your regular user fields
+    }));
 
-// Calculate customer tier based on total spending
-const calculateCustomerTier = (totalSpent) => {
-  if (totalSpent >= 5000) return "platinum";
-  if (totalSpent >= 2000) return "gold";
-  if (totalSpent >= 500) return "silver";
-  return "basic";
-};
+    // Generate 5 approved admins
+    const approvedAdmins = Array.from({ length: 5 }, () => ({
+      ...regularUsers[0], // Copy structure from regular user
+      role: 'admin',
+      status: 'approved',
+      adminRequest: true,
+      verification: {
+        emailVerified: true,
+        phoneVerified: true,
+        identityVerified: true,
+        verifiedAt: faker.date.recent()
+      }
+    }));
 
-// Main seeding function
-const seedCustomers = async () => {
-  try {
-    await connectDB();
-    console.log("🚀 Generating fake customers...");
+    // Generate 5 pending admins
+    const pendingAdmins = Array.from({ length: 5 }, () => ({
+      ...approvedAdmins[0], // Copy structure from approved admin
+      status: 'pending',
+      verification: {
+        emailVerified: true,
+        phoneVerified: true,
+        identityVerified: false,
+        verifiedAt: null
+      }
+    }));
 
-    await User.deleteMany({ role: "user" });
-    console.log("🧹 Cleared existing customers");
-
-    const customers = generateGCCCustomers(50);
-    await User.insertMany(customers);
-
-    console.log(`✅ Successfully created ${customers.length} customers`);
-    console.log("Sample customer:", customers[0]);
+    const users = [...regularUsers, ...approvedAdmins, ...pendingAdmins];
+    await User.insertMany(users);
+    console.log(`Successfully seeded ${users.length} users`);
 
     await mongoose.connection.close();
-    console.log("🔌 MongoDB connection closed");
-    process.exit(0);
   } catch (error) {
-    console.error("❌ Seeding failed:", error);
+    console.error('Error seeding users:', error);
     await mongoose.connection.close();
     process.exit(1);
   }
 };
 
-// Run the script
-seedCustomers();
+
