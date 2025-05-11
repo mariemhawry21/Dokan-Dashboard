@@ -601,6 +601,7 @@
   const updateProduct = async () => {
     const { valid } = await form.value.validate()
     if (valid) {
+      
       try {
         const formData = new FormData()
 
