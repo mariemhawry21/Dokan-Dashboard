@@ -1,10 +1,15 @@
 <template>
   <v-container>
     <!-- Back Button -->
-    <v-btn color="primary" class="mb-4" @click="goBack()">
-      <v-icon left>mdi-arrow-left</v-icon>
+    <v-card-title
+      class="d-flex align-center mb-4"
+      :class="{ 'flex-row-reverse': locale === 'ar' }"
+    >
+      <v-btn icon @click="goBack()" :class="locale === 'ar' ? 'ml-5' : 'mr-5'">
+        <v-icon>mdi-arrow-left</v-icon>
+      </v-btn>
       {{ $t('customers.backToList') }}
-    </v-btn>
+    </v-card-title>
 
     <!-- Loading State -->
     <v-skeleton-loader v-if="loading" type="card"></v-skeleton-loader>

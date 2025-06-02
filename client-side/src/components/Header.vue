@@ -45,6 +45,7 @@
           style="width: auto"
           :divider="breadcrumbDivider"
           dir="rtl"
+          v-if="!isMobile"
         >
           <v-breadcrumbs-item
             v-for="(crumb, index) in formattedBreadcrumbs"
@@ -81,6 +82,7 @@
         class="px-4 py-2 breadcrumbs"
         style="width: auto"
         dir="ltr"
+        v-if="!isMobile"
       >
         <v-breadcrumbs-item
           v-for="(crumb, index) in formattedBreadcrumbs"
@@ -145,10 +147,10 @@
 
 <script setup>
   import { useRoute } from 'vue-router'
-  import { computed, onMounted } from 'vue'
+  import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
   import { useI18n } from 'vue-i18n'
   import useThemeToggle from '../composables/useThemeToggle'
-
+  const isMobile = ref(window.innerWidth <= 768)
   const { locale, t } = useI18n()
   const route = useRoute()
   const { isDark, toggleTheme } = useThemeToggle()
@@ -203,11 +205,18 @@
     locale.value = langCode
     localStorage.setItem('userLanguage', langCode)
   }
+  function handleResize() {
+    isMobile.value = window.innerWidth <= 768
+  }
   onMounted(() => {
     const savedLanguage = localStorage.getItem('userLanguage')
     if (savedLanguage) {
       locale.value = savedLanguage
     }
+    window.addEventListener('resize', handleResize)
+  })
+  onBeforeUnmount(() => {
+    window.removeEventListener('resize', handleResize)
   })
 </script>
 
